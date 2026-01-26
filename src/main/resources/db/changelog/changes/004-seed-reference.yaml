@@ -1,0 +1,199 @@
+databaseChangeLog:
+  - changeSet:
+      id: 501-seed-roles
+      author: nemanja
+      changes:
+        - insert:
+            tableName: role
+            columns:
+              - column:
+                  name: name
+                  value: "SUPER_ADMIN"
+              - column:
+                  name: description
+                  value: "Full access (all locations)"
+        - insert:
+            tableName: role
+            columns:
+              - column:
+                  name: name
+                  value: "LOCAL_ADMIN"
+              - column:
+                  name: description
+                  value: "Access scoped to assigned locations"
+
+  - changeSet:
+      id: 502-seed-fuel-types
+      author: nemanja
+      changes:
+        - insert:
+            tableName: fuel_type
+            columns:
+              - column:
+                  name: name
+                  value: "Diesel"
+        - insert:
+            tableName: fuel_type
+            columns:
+              - column:
+                  name: name
+                  value: "Gasoline"
+        - insert:
+            tableName: fuel_type
+            columns:
+              - column:
+                  name: name
+                  value: "Electric"
+        - insert:
+            tableName: fuel_type
+            columns:
+              - column:
+                  name: name
+                  value: "Hybrid"
+
+  - changeSet:
+      id: 503-seed-locations
+      author: nemanja
+      changes:
+        - insert:
+            tableName: location_unit
+            columns:
+              - column:
+                  name: location_name
+                  value: "Belgrade HQ"
+              - column:
+                  name: location_address
+                  value: "Bulevar kralja Aleksandra, Belgrade"
+        - insert:
+            tableName: location_unit
+            columns:
+              - column:
+                  name: location_name
+                  value: "Novi Sad Unit"
+              - column:
+                  name: location_address
+                  value: "Novi Sad"
+
+  - changeSet:
+      id: 504-seed-brands
+      author: nemanja
+      changes:
+        - insert:
+            tableName: brand
+            columns:
+              - column:
+                  name: name
+                  value: "Mercedes-Benz"
+        - insert:
+            tableName: brand
+            columns:
+              - column:
+                  name: name
+                  value: "Volkswagen"
+        - insert:
+            tableName: brand
+            columns:
+              - column:
+                  name: name
+                  value: "Ford"
+
+  - changeSet:
+      id: 505-seed-vehicle-models
+      author: nemanja
+      changes:
+        - insert:
+            tableName: vehicle_model
+            columns:
+              - column:
+                  name: name
+                  value: "Sprinter"
+              - column:
+                  name: brand_id
+                  valueNumeric: 1
+        - insert:
+            tableName: vehicle_model
+            columns:
+              - column:
+                  name: name
+                  value: "Transporter"
+              - column:
+                  name: brand_id
+                  valueNumeric: 2
+        - insert:
+            tableName: vehicle_model
+            columns:
+              - column:
+                  name: name
+                  value: "Transit"
+              - column:
+                  name: brand_id
+                  valueNumeric: 3
+
+  - changeSet:
+      id: 506-seed-test-user
+      author: nemanja
+      changes:
+        - insert:
+            tableName: app_user
+            columns:
+              - column:
+                  name: username
+                  value: "admin"
+              - column:
+                  name: role_id
+                  valueNumeric: 1
+              - column:
+                  name: full_name
+                  value: "Admin User"
+              - column:
+                  name: password_hash
+                  value: "admin123"
+              - column:
+                  name: is_active
+                  valueNumeric: 1
+
+  - changeSet:
+      id: 507-seed-test-driver
+      author: nemanja
+      changes:
+        - insert:
+            tableName: driver
+            columns:
+              - column:
+                  name: sap_number
+                  valueNumeric: 1001
+              - column:
+                  name: full_name
+                  value: "Petar Petrovic"
+              - column:
+                  name: phone
+                  value: "+381641234567"
+              - column:
+                  name: status
+                  value: "ACTIVE"
+
+  - changeSet:
+      id: 508-seed-test-vehicle
+      author: nemanja
+      changes:
+        - insert:
+            tableName: vehicle
+            columns:
+              - column:
+                  name: sap_number
+                  valueNumeric: 2001
+              - column:
+                  name: chassis_number
+                  value: "WDB9066351K123456"
+              - column:
+                  name: year_of_manufacture
+                  valueNumeric: 2020
+              - column:
+                  name: vehicle_model_id
+                  valueNumeric: 1
+              - column:
+                  name: fuel_type_id
+                  valueNumeric: 1
+              - column:
+                  name: vehicle_status
+                  value: "ACTIVE"

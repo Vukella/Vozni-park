@@ -1,0 +1,587 @@
+databaseChangeLog:
+
+  # ========== REFERENCE / LOOKUP ==========
+
+  - changeSet:
+      id: 001-create-role
+      author: nemanja
+      changes:
+        - createTable:
+            tableName: role
+            columns:
+              - column:
+                  name: id_role
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(30)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: VARCHAR(150)
+
+  - changeSet:
+      id: 002-create-brand
+      author: nemanja
+      changes:
+        - createTable:
+            tableName: brand
+            columns:
+              - column:
+                  name: id_brand
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(30)
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: 003-create-vehicle-model
+      author: nemanja
+      changes:
+        - createTable:
+            tableName: vehicle_model
+            columns:
+              - column:
+                  name: id_vehicle_model
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: brand_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: 004-create-fuel-type
+      author: nemanja
+      changes:
+        - createTable:
+            tableName: fuel_type
+            columns:
+              - column:
+                  name: id_fuel_type
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(30)
+
+  # ========== LOCATION ==========
+
+  - changeSet:
+      id: 005-create-location-unit
+      author: nemanja
+      changes:
+        - createTable:
+            tableName: location_unit
+            columns:
+              - column:
+                  name: id_location_unit
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: location_address
+                  type: VARCHAR(500)
+              - column:
+                  name: location_name
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+
+  # ========== VEHICLE EQUIPMENT & DOCUMENTS ==========
+
+  - changeSet:
+      id: 006-create-registration
+      author: nemanja
+      changes:
+        - createTable:
+            tableName: registration
+            columns:
+              - column:
+                  name: id_registration
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: registration_number
+                  type: VARCHAR(20)
+              - column:
+                  name: date_from
+                  type: DATE
+              - column:
+                  name: date_to
+                  type: DATE
+              - column:
+                  name: policy_number
+                  type: BIGINT
+              - column:
+                  name: status
+                  type: VARCHAR(20)
+              - column:
+                  name: status_code
+                  type: INT
+
+  - changeSet:
+      id: 007-create-first-aid-kit
+      author: nemanja
+      changes:
+        - createTable:
+            tableName: first_aid_kit
+            columns:
+              - column:
+                  name: id_first_aid_kit
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: expiry_date
+                  type: DATE
+              - column:
+                  name: status
+                  type: VARCHAR(20)
+              - column:
+                  name: status_code
+                  type: INT
+
+  # ========== VEHICLE ==========
+
+  - changeSet:
+      id: 008-create-vehicle
+      author: nemanja
+      changes:
+        - createTable:
+            tableName: vehicle
+            columns:
+              - column:
+                  name: id_vehicle
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: sap_number
+                  type: BIGINT
+              - column:
+                  name: chassis_number
+                  type: VARCHAR(50)
+              - column:
+                  name: engine_number
+                  type: BIGINT
+              - column:
+                  name: tag_serial_number
+                  type: BIGINT
+              - column:
+                  name: year_of_manufacture
+                  type: INT
+              - column:
+                  name: engine_displacement
+                  type: DECIMAL(10,2)
+              - column:
+                  name: power
+                  type: INT
+              - column:
+                  name: registration_id
+                  type: BIGINT
+              - column:
+                  name: fuel_type_id
+                  type: BIGINT
+              - column:
+                  name: tire_marking
+                  type: VARCHAR(50)
+              - column:
+                  name: fire_extinguisher_serial_number
+                  type: BIGINT
+              - column:
+                  name: first_aid_kit_id
+                  type: BIGINT
+              - column:
+                  name: vehicle_model_id
+                  type: BIGINT
+              - column:
+                  name: vehicle_status
+                  type: VARCHAR(20)
+              - column:
+                  name: status_code
+                  type: INT
+
+  - changeSet:
+      id: 009-create-vehicle-location
+      author: nemanja
+      changes:
+        - createTable:
+            tableName: vehicle_location
+            columns:
+              - column:
+                  name: id_vehicle_location
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: vehicle_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: location_unit_id
+                  type: BIGINT
+
+  # ========== DRIVER TABLES ==========
+
+  - changeSet:
+      id: 010-create-drivers-license
+      author: nemanja
+      changes:
+        - createTable:
+            tableName: drivers_license
+            columns:
+              - column:
+                  name: id_drivers_license
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: date_from
+                  type: DATE
+              - column:
+                  name: date_to
+                  type: DATE
+              - column:
+                  name: status
+                  type: VARCHAR(20)
+              - column:
+                  name: status_code
+                  type: INT
+
+  - changeSet:
+      id: 011-create-driver
+      author: nemanja
+      changes:
+        - createTable:
+            tableName: driver
+            columns:
+              - column:
+                  name: id_driver
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: sap_number
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: full_name
+                  type: VARCHAR(60)
+              - column:
+                  name: phone
+                  type: VARCHAR(20)
+              - column:
+                  name: status
+                  type: VARCHAR(30)
+              - column:
+                  name: status_code
+                  type: INT
+
+  - changeSet:
+      id: 012-create-driver-location
+      author: nemanja
+      changes:
+        - createTable:
+            tableName: driver_location
+            columns:
+              - column:
+                  name: id_driver_location
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: driver_id
+                  type: BIGINT
+              - column:
+                  name: location_unit_id
+                  type: BIGINT
+
+  - changeSet:
+      id: 013-create-driver-license-assignment
+      author: nemanja
+      changes:
+        - createTable:
+            tableName: driver_license_assignment
+            columns:
+              - column:
+                  name: id_driver_license_assignment
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: driver_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: drivers_license_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: license_category
+                  type: VARCHAR(20)
+
+  # ========== TRAVEL ORDER TABLES ==========
+
+  - changeSet:
+      id: 014-create-travel-order
+      author: nemanja
+      changes:
+        - createTable:
+            tableName: travel_order
+            columns:
+              - column:
+                  name: id_travel_order
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: date_from
+                  type: DATE
+              - column:
+                  name: date_to
+                  type: DATE
+              - column:
+                  name: work_order_number
+                  type: VARCHAR(30)
+              - column:
+                  name: travel_order_number
+                  type: VARCHAR(20)
+              - column:
+                  name: created_by_user_id
+                  type: BIGINT
+              - column:
+                  name: location_id
+                  type: BIGINT
+              - column:
+                  name: starting_mileage
+                  type: BIGINT
+              - column:
+                  name: ending_mileage
+                  type: BIGINT
+              - column:
+                  name: status
+                  type: VARCHAR(20)
+                  defaultValue: IN_PROGRESS
+              - column:
+                  name: creation_time
+                  type: DATETIME
+                  defaultValueComputed: CURRENT_TIMESTAMP
+
+  - changeSet:
+      id: 015-create-travel-order-counter
+      author: nemanja
+      changes:
+        - createTable:
+            tableName: travel_order_counter
+            columns:
+              - column:
+                  name: location_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: year
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: last_number
+                  type: INT
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: 016-create-driver-travel-order
+      author: nemanja
+      changes:
+        - createTable:
+            tableName: driver_travel_order
+            columns:
+              - column:
+                  name: driver_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: travel_order_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: 017-create-travel-order-vehicle
+      author: nemanja
+      changes:
+        - createTable:
+            tableName: travel_order_vehicle
+            columns:
+              - column:
+                  name: travel_order_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: vehicle_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+
+  # ========== USER & SECURITY ==========
+
+  - changeSet:
+      id: 018-create-app-user
+      author: nemanja
+      changes:
+        - createTable:
+            tableName: app_user
+            columns:
+              - column:
+                  name: id_user
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: username
+                  type: VARCHAR(30)
+              - column:
+                  name: role_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: full_name
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: password_hash
+                  type: VARCHAR(200)
+              - column:
+                  name: failed_login_attempts
+                  type: INT
+                  defaultValueNumeric: 0
+              - column:
+                  name: last_failed_login
+                  type: DATETIME
+              - column:
+                  name: last_successful_login
+                  type: DATETIME
+              - column:
+                  name: is_active
+                  type: TINYINT
+                  defaultValueNumeric: 1
+
+  - changeSet:
+      id: 019-create-user-location
+      author: nemanja
+      changes:
+        - createTable:
+            tableName: user_location
+            columns:
+              - column:
+                  name: user_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: location_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: 020-create-user-session
+      author: nemanja
+      changes:
+        - createTable:
+            tableName: user_session
+            columns:
+              - column:
+                  name: id_session
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: session_token
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: DATETIME
+                  constraints:
+                    nullable: false
+              - column:
+                  name: expires_at
+                  type: DATETIME
+                  constraints:
+                    nullable: false
+              - column:
+                  name: last_activity
+                  type: DATETIME
+                  constraints:
+                    nullable: false
+              - column:
+                  name: is_active
+                  type: TINYINT
+                  defaultValueNumeric: 1
+                  constraints:
+                    nullable: false

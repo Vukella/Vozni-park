@@ -1,0 +1,348 @@
+databaseChangeLog:
+
+  # ========== COMPOSITE PRIMARY KEYS ==========
+
+  - changeSet:
+      id: 101-pk-travel-order-counter
+      author: nemanja
+      changes:
+        - addPrimaryKey:
+            tableName: travel_order_counter
+            columnNames: location_id, year
+            constraintName: pk_travel_order_counter
+
+  - changeSet:
+      id: 102-pk-driver-travel-order
+      author: nemanja
+      changes:
+        - addPrimaryKey:
+            tableName: driver_travel_order
+            columnNames: driver_id, travel_order_id
+            constraintName: pk_driver_travel_order
+
+  - changeSet:
+      id: 103-pk-travel-order-vehicle
+      author: nemanja
+      changes:
+        - addPrimaryKey:
+            tableName: travel_order_vehicle
+            columnNames: vehicle_id, travel_order_id
+            constraintName: pk_travel_order_vehicle
+
+  - changeSet:
+      id: 104-pk-user-location
+      author: nemanja
+      changes:
+        - addPrimaryKey:
+            tableName: user_location
+            columnNames: user_id, location_id
+            constraintName: pk_user_location
+
+  # ========== UNIQUE CONSTRAINTS ==========
+
+  - changeSet:
+      id: 201-unique-vehicle-location-vehicle
+      author: nemanja
+      changes:
+        - addUniqueConstraint:
+            tableName: vehicle_location
+            columnNames: vehicle_id
+            constraintName: uq_vehicle_location_vehicle
+
+  - changeSet:
+      id: 202-unique-driver-sap
+      author: nemanja
+      changes:
+        - addUniqueConstraint:
+            tableName: driver
+            columnNames: sap_number
+            constraintName: uq_driver_sap_number
+
+  - changeSet:
+      id: 203-unique-driver-location-driver
+      author: nemanja
+      changes:
+        - addUniqueConstraint:
+            tableName: driver_location
+            columnNames: driver_id
+            constraintName: uq_driver_location_driver
+
+  - changeSet:
+      id: 204-unique-driver-license-assignment
+      author: nemanja
+      changes:
+        - addUniqueConstraint:
+            tableName: driver_license_assignment
+            columnNames: driver_id, drivers_license_id, license_category
+            constraintName: uq_driver_license_assignment
+
+  - changeSet:
+      id: 205-unique-travel-order-work-order-number
+      author: nemanja
+      changes:
+        - addUniqueConstraint:
+            tableName: travel_order
+            columnNames: work_order_number
+            constraintName: uq_travel_order_work_order_number
+
+  - changeSet:
+      id: 206-unique-travel-order-location-number
+      author: nemanja
+      changes:
+        - addUniqueConstraint:
+            tableName: travel_order
+            columnNames: location_id, travel_order_number
+            constraintName: uq_travel_order_location_number
+
+  - changeSet:
+      id: 207-unique-session-token
+      author: nemanja
+      changes:
+        - addUniqueConstraint:
+            tableName: user_session
+            columnNames: session_token
+            constraintName: uq_user_session_token
+
+  # ========== FOREIGN KEYS ==========
+
+  - changeSet:
+      id: 301-fk-vehicle-model-brand
+      author: nemanja
+      changes:
+        - addForeignKeyConstraint:
+            baseTableName: vehicle_model
+            baseColumnNames: brand_id
+            referencedTableName: brand
+            referencedColumnNames: id_brand
+            constraintName: fk_vehicle_model_brand
+
+  - changeSet:
+      id: 302-fk-vehicle-fuel-type
+      author: nemanja
+      changes:
+        - addForeignKeyConstraint:
+            baseTableName: vehicle
+            baseColumnNames: fuel_type_id
+            referencedTableName: fuel_type
+            referencedColumnNames: id_fuel_type
+            constraintName: fk_vehicle_fuel_type
+
+  - changeSet:
+      id: 303-fk-vehicle-registration
+      author: nemanja
+      changes:
+        - addForeignKeyConstraint:
+            baseTableName: vehicle
+            baseColumnNames: registration_id
+            referencedTableName: registration
+            referencedColumnNames: id_registration
+            constraintName: fk_vehicle_registration
+
+  - changeSet:
+      id: 304-fk-vehicle-first-aid-kit
+      author: nemanja
+      changes:
+        - addForeignKeyConstraint:
+            baseTableName: vehicle
+            baseColumnNames: first_aid_kit_id
+            referencedTableName: first_aid_kit
+            referencedColumnNames: id_first_aid_kit
+            constraintName: fk_vehicle_first_aid_kit
+
+  - changeSet:
+      id: 305-fk-vehicle-vehicle-model
+      author: nemanja
+      changes:
+        - addForeignKeyConstraint:
+            baseTableName: vehicle
+            baseColumnNames: vehicle_model_id
+            referencedTableName: vehicle_model
+            referencedColumnNames: id_vehicle_model
+            constraintName: fk_vehicle_vehicle_model
+
+  - changeSet:
+      id: 306-fk-vehicle-location-vehicle
+      author: nemanja
+      changes:
+        - addForeignKeyConstraint:
+            baseTableName: vehicle_location
+            baseColumnNames: vehicle_id
+            referencedTableName: vehicle
+            referencedColumnNames: id_vehicle
+            constraintName: fk_vehicle_location_vehicle
+
+  - changeSet:
+      id: 307-fk-vehicle-location-location-unit
+      author: nemanja
+      changes:
+        - addForeignKeyConstraint:
+            baseTableName: vehicle_location
+            baseColumnNames: location_unit_id
+            referencedTableName: location_unit
+            referencedColumnNames: id_location_unit
+            constraintName: fk_vehicle_location_location_unit
+
+  - changeSet:
+      id: 308-fk-driver-location-driver
+      author: nemanja
+      changes:
+        - addForeignKeyConstraint:
+            baseTableName: driver_location
+            baseColumnNames: driver_id
+            referencedTableName: driver
+            referencedColumnNames: id_driver
+            constraintName: fk_driver_location_driver
+
+  - changeSet:
+      id: 309-fk-driver-location-location-unit
+      author: nemanja
+      changes:
+        - addForeignKeyConstraint:
+            baseTableName: driver_location
+            baseColumnNames: location_unit_id
+            referencedTableName: location_unit
+            referencedColumnNames: id_location_unit
+            constraintName: fk_driver_location_location_unit
+
+  - changeSet:
+      id: 310-fk-driver-license-assignment-driver
+      author: nemanja
+      changes:
+        - addForeignKeyConstraint:
+            baseTableName: driver_license_assignment
+            baseColumnNames: driver_id
+            referencedTableName: driver
+            referencedColumnNames: id_driver
+            constraintName: fk_dla_driver
+
+  - changeSet:
+      id: 311-fk-driver-license-assignment-license
+      author: nemanja
+      changes:
+        - addForeignKeyConstraint:
+            baseTableName: driver_license_assignment
+            baseColumnNames: drivers_license_id
+            referencedTableName: drivers_license
+            referencedColumnNames: id_drivers_license
+            constraintName: fk_dla_drivers_license
+
+  - changeSet:
+      id: 312-fk-travel-order-location-unit
+      author: nemanja
+      changes:
+        - addForeignKeyConstraint:
+            baseTableName: travel_order
+            baseColumnNames: location_id
+            referencedTableName: location_unit
+            referencedColumnNames: id_location_unit
+            constraintName: fk_travel_order_location_unit
+
+  - changeSet:
+      id: 313-fk-travel-order-counter-location-unit
+      author: nemanja
+      changes:
+        - addForeignKeyConstraint:
+            baseTableName: travel_order_counter
+            baseColumnNames: location_id
+            referencedTableName: location_unit
+            referencedColumnNames: id_location_unit
+            constraintName: fk_travel_order_counter_location_unit
+
+  - changeSet:
+      id: 314-fk-travel-order-created-by-user
+      author: nemanja
+      changes:
+        - addForeignKeyConstraint:
+            baseTableName: travel_order
+            baseColumnNames: created_by_user_id
+            referencedTableName: app_user
+            referencedColumnNames: id_user
+            constraintName: fk_travel_order_created_by_user
+
+  - changeSet:
+      id: 315-fk-driver-travel-order-driver
+      author: nemanja
+      changes:
+        - addForeignKeyConstraint:
+            baseTableName: driver_travel_order
+            baseColumnNames: driver_id
+            referencedTableName: driver
+            referencedColumnNames: id_driver
+            constraintName: fk_driver_travel_order_driver
+
+  - changeSet:
+      id: 316-fk-driver-travel-order-travel-order
+      author: nemanja
+      changes:
+        - addForeignKeyConstraint:
+            baseTableName: driver_travel_order
+            baseColumnNames: travel_order_id
+            referencedTableName: travel_order
+            referencedColumnNames: id_travel_order
+            constraintName: fk_driver_travel_order_travel_order
+
+  - changeSet:
+      id: 317-fk-travel-order-vehicle-vehicle
+      author: nemanja
+      changes:
+        - addForeignKeyConstraint:
+            baseTableName: travel_order_vehicle
+            baseColumnNames: vehicle_id
+            referencedTableName: vehicle
+            referencedColumnNames: id_vehicle
+            constraintName: fk_travel_order_vehicle_vehicle
+
+  - changeSet:
+      id: 318-fk-travel-order-vehicle-travel-order
+      author: nemanja
+      changes:
+        - addForeignKeyConstraint:
+            baseTableName: travel_order_vehicle
+            baseColumnNames: travel_order_id
+            referencedTableName: travel_order
+            referencedColumnNames: id_travel_order
+            constraintName: fk_travel_order_vehicle_travel_order
+
+  - changeSet:
+      id: 319-fk-app-user-role
+      author: nemanja
+      changes:
+        - addForeignKeyConstraint:
+            baseTableName: app_user
+            baseColumnNames: role_id
+            referencedTableName: role
+            referencedColumnNames: id_role
+            constraintName: fk_app_user_role
+
+  - changeSet:
+      id: 320-fk-user-location-user
+      author: nemanja
+      changes:
+        - addForeignKeyConstraint:
+            baseTableName: user_location
+            baseColumnNames: user_id
+            referencedTableName: app_user
+            referencedColumnNames: id_user
+            constraintName: fk_user_location_user
+
+  - changeSet:
+      id: 321-fk-user-location-location
+      author: nemanja
+      changes:
+        - addForeignKeyConstraint:
+            baseTableName: user_location
+            baseColumnNames: location_id
+            referencedTableName: location_unit
+            referencedColumnNames: id_location_unit
+            constraintName: fk_user_location_location
+
+  - changeSet:
+      id: 322-fk-user-session-user
+      author: nemanja
+      changes:
+        - addForeignKeyConstraint:
+            baseTableName: user_session
+            baseColumnNames: user_id
+            referencedTableName: app_user
+            referencedColumnNames: id_user
+            constraintName: fk_user_session_user

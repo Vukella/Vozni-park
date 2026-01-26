@@ -1,0 +1,158 @@
+databaseChangeLog:
+
+  - changeSet:
+      id: 401-idx-vehicle-model-brand-id
+      author: nemanja
+      changes:
+        - createIndex:
+            tableName: vehicle_model
+            indexName: idx_vehicle_model_brand_id
+            columns:
+              - column:
+                  name: brand_id
+
+  - changeSet:
+      id: 402-idx-vehicle-fks
+      author: nemanja
+      changes:
+        - createIndex:
+            tableName: vehicle
+            indexName: idx_vehicle_fuel_type_id
+            columns:
+              - column:
+                  name: fuel_type_id
+        - createIndex:
+            tableName: vehicle
+            indexName: idx_vehicle_registration_id
+            columns:
+              - column:
+                  name: registration_id
+        - createIndex:
+            tableName: vehicle
+            indexName: idx_vehicle_first_aid_kit_id
+            columns:
+              - column:
+                  name: first_aid_kit_id
+        - createIndex:
+            tableName: vehicle
+            indexName: idx_vehicle_vehicle_model_id
+            columns:
+              - column:
+                  name: vehicle_model_id
+
+  - changeSet:
+      id: 403-idx-vehicle-location-fks
+      author: nemanja
+      changes:
+        - createIndex:
+            tableName: vehicle_location
+            indexName: idx_vehicle_location_location_unit_id
+            columns:
+              - column:
+                  name: location_unit_id
+
+  - changeSet:
+      id: 404-idx-driver-location-fks
+      author: nemanja
+      changes:
+        - createIndex:
+            tableName: driver_location
+            indexName: idx_driver_location_location_unit_id
+            columns:
+              - column:
+                  name: location_unit_id
+
+  - changeSet:
+      id: 405-idx-driver-license-assignment-fks
+      author: nemanja
+      changes:
+        - createIndex:
+            tableName: driver_license_assignment
+            indexName: idx_dla_driver_id
+            columns:
+              - column:
+                  name: driver_id
+        - createIndex:
+            tableName: driver_license_assignment
+            indexName: idx_dla_drivers_license_id
+            columns:
+              - column:
+                  name: drivers_license_id
+
+  - changeSet:
+      id: 406-idx-travel-order-fks
+      author: nemanja
+      changes:
+        - createIndex:
+            tableName: travel_order
+            indexName: idx_travel_order_location_id
+            columns:
+              - column:
+                  name: location_id
+        - createIndex:
+            tableName: travel_order
+            indexName: idx_travel_order_created_by_user_id
+            columns:
+              - column:
+                  name: created_by_user_id
+
+  - changeSet:
+      id: 407-idx-travel-order-counter-location
+      author: nemanja
+      changes:
+        - createIndex:
+            tableName: travel_order_counter
+            indexName: idx_toc_location_id
+            columns:
+              - column:
+                  name: location_id
+
+  - changeSet:
+      id: 408-idx-join-tables
+      author: nemanja
+      changes:
+        - createIndex:
+            tableName: driver_travel_order
+            indexName: idx_driver_travel_order_travel_order_id
+            columns:
+              - column:
+                  name: travel_order_id
+        - createIndex:
+            tableName: travel_order_vehicle
+            indexName: idx_travel_order_vehicle_travel_order_id
+            columns:
+              - column:
+                  name: travel_order_id
+
+  - changeSet:
+      id: 409-idx-app-user-role
+      author: nemanja
+      changes:
+        - createIndex:
+            tableName: app_user
+            indexName: idx_app_user_role_id
+            columns:
+              - column:
+                  name: role_id
+
+  - changeSet:
+      id: 410-idx-user-location-fks
+      author: nemanja
+      changes:
+        - createIndex:
+            tableName: user_location
+            indexName: idx_user_location_location_id
+            columns:
+              - column:
+                  name: location_id
+
+  - changeSet:
+      id: 411-idx-user-session-user
+      author: nemanja
+      changes:
+        - createIndex:
+            tableName: user_session
+            indexName: idx_user_session_user_id
+            columns:
+              - column:
+                  name: user_id

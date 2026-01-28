@@ -1,8 +1,11 @@
 package com.example.vozni_park.service;
 
+import com.example.vozni_park.dto.request.TravelOrderRequestDTO;
+import com.example.vozni_park.dto.response.TravelOrderResponseDTO;
 import com.example.vozni_park.entity.TravelOrder;
 import com.example.vozni_park.entity.TravelOrderCounter;
 import com.example.vozni_park.entity.embeddable.TravelOrderCounterId;
+import com.example.vozni_park.mapper.TravelOrderMapper;
 import com.example.vozni_park.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -14,260 +17,257 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
-@Transactional
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class TravelOrderService {
-    
+
     private final TravelOrderRepository travelOrderRepository;
+    private final TravelOrderMapper travelOrderMapper;
     private final TravelOrderCounterRepository travelOrderCounterRepository;
     private final LocationUnitRepository locationUnitRepository;
     private final AppUserRepository appUserRepository;
-    
+
     /**
-     * Get all travel orders
+     * Get all travel orders - returns DTOs
      */
-    @Transactional(readOnly = true)
-    public List<TravelOrder> getAllTravelOrders() {
-        return travelOrderRepository.findAll();
+    public List<TravelOrderResponseDTO> getAllTravelOrders() {
+        List<TravelOrder> travelOrders = travelOrderRepository.findAll();
+        return travelOrderMapper.toResponseDTOList(travelOrders);
     }
-    
+
     /**
      * Get travel order by ID
      */
-    @Transactional(readOnly = true)
-    public Optional<TravelOrder> getTravelOrderById(Long id) {
-        return travelOrderRepository.findById(id);
+    public Optional<TravelOrderResponseDTO> getTravelOrderById(Long id) {
+        return travelOrderRepository.findById(id)
+                .map(travelOrderMapper::toResponseDTO);
     }
-    
+
     /**
      * Get travel order by work order number
      */
-    @Transactional(readOnly = true)
-    public Optional<TravelOrder> getTravelOrderByWorkOrderNumber(String workOrderNumber) {
-        return travelOrderRepository.findByWorkOrderNumber(workOrderNumber);
+    public Optional<TravelOrderResponseDTO> getTravelOrderByWorkOrderNumber(String workOrderNumber) {
+        return travelOrderRepository.findByWorkOrderNumber(workOrderNumber)
+                .map(travelOrderMapper::toResponseDTO);
     }
-    
+
     /**
      * Get travel orders by status
      */
-    @Transactional(readOnly = true)
-    public List<TravelOrder> getTravelOrdersByStatus(String status) {
-        return travelOrderRepository.findByStatus(status);
+    public List<TravelOrderResponseDTO> getTravelOrdersByStatus(String status) {
+        List<TravelOrder> travelOrders = travelOrderRepository.findByStatus(status);
+        return travelOrderMapper.toResponseDTOList(travelOrders);
     }
-    
+
     /**
      * Get travel orders by location
      */
-    @Transactional(readOnly = true)
-    public List<TravelOrder> getTravelOrdersByLocation(Long locationId) {
-        return travelOrderRepository.findByLocationId(locationId);
+    public List<TravelOrderResponseDTO> getTravelOrdersByLocation(Long locationId) {
+        List<TravelOrder> travelOrders = travelOrderRepository.findByLocationId(locationId);
+        return travelOrderMapper.toResponseDTOList(travelOrders);
     }
-    
+
     /**
      * Get active travel orders for a location
      */
-    @Transactional(readOnly = true)
-    public List<TravelOrder> getActiveTravelOrdersByLocation(Long locationId) {
-        return travelOrderRepository.findActiveByLocation(locationId);
+    public List<TravelOrderResponseDTO> getActiveTravelOrdersByLocation(Long locationId) {
+        List<TravelOrder> travelOrders = travelOrderRepository.findActiveByLocation(locationId);
+        return travelOrderMapper.toResponseDTOList(travelOrders);
     }
-    
+
     /**
      * Get travel orders by driver
      */
-    @Transactional(readOnly = true)
-    public List<TravelOrder> getTravelOrdersByDriver(Long driverId) {
-        return travelOrderRepository.findByDriverId(driverId);
+    public List<TravelOrderResponseDTO> getTravelOrdersByDriver(Long driverId) {
+        List<TravelOrder> travelOrders = travelOrderRepository.findByDriverId(driverId);
+        return travelOrderMapper.toResponseDTOList(travelOrders);
     }
-    
+
     /**
      * Get travel orders by vehicle
      */
-    @Transactional(readOnly = true)
-    public List<TravelOrder> getTravelOrdersByVehicle(Long vehicleId) {
-        return travelOrderRepository.findByVehicleId(vehicleId);
+    public List<TravelOrderResponseDTO> getTravelOrdersByVehicle(Long vehicleId) {
+        List<TravelOrder> travelOrders = travelOrderRepository.findByVehicleId(vehicleId);
+        return travelOrderMapper.toResponseDTOList(travelOrders);
     }
-    
+
     /**
      * Get travel orders by date range
      */
-    @Transactional(readOnly = true)
-    public List<TravelOrder> getTravelOrdersByDateRange(LocalDate startDate, LocalDate endDate) {
-        return travelOrderRepository.findByDateRange(startDate, endDate);
+    public List<TravelOrderResponseDTO> getTravelOrdersByDateRange(LocalDate startDate, LocalDate endDate) {
+        List<TravelOrder> travelOrders = travelOrderRepository.findByDateRange(startDate, endDate);
+        return travelOrderMapper.toResponseDTOList(travelOrders);
     }
-    
+
     /**
-     * Create new travel order with auto-generated travel order number
-     * Format: LOCATION_CODE-YYYY-NNNN (e.g., BG-2025-0001)
+     * Create new travel order from DTO
      */
-    public TravelOrder createTravelOrder(TravelOrder travelOrder) {
+    @Transactional
+    public TravelOrderResponseDTO createTravelOrder(TravelOrderRequestDTO travelOrderDTO) {
         // Validation: Check if location exists
-        if (!locationUnitRepository.existsById(travelOrder.getLocationId())) {
-            throw new IllegalArgumentException("Location not found with id: " + travelOrder.getLocationId());
+        if (!locationUnitRepository.existsById(travelOrderDTO.getLocationId())) {
+            throw new IllegalArgumentException("Location not found with id: " + travelOrderDTO.getLocationId());
         }
-        
+
         // Validation: Check if created by user exists
-        if (travelOrder.getCreatedByUserId() != null && 
-            !appUserRepository.existsById(travelOrder.getCreatedByUserId())) {
-            throw new IllegalArgumentException("User not found with id: " + travelOrder.getCreatedByUserId());
+        if (travelOrderDTO.getCreatedByUserId() != null &&
+                !appUserRepository.existsById(travelOrderDTO.getCreatedByUserId())) {
+            throw new IllegalArgumentException("User not found with id: " + travelOrderDTO.getCreatedByUserId());
         }
-        
+
         // Validation: Check if work order number already exists
-        if (travelOrder.getWorkOrderNumber() != null && 
-            travelOrderRepository.existsByWorkOrderNumber(travelOrder.getWorkOrderNumber())) {
-            throw new IllegalArgumentException("Work order number '" + travelOrder.getWorkOrderNumber() + "' already exists");
+        if (travelOrderDTO.getWorkOrderNumber() != null &&
+                travelOrderRepository.existsByWorkOrderNumber(travelOrderDTO.getWorkOrderNumber())) {
+            throw new IllegalArgumentException("Work order number '" + travelOrderDTO.getWorkOrderNumber() + "' already exists");
         }
-        
+
         // Validation: Date range check
-        if (travelOrder.getDateFrom() != null && travelOrder.getDateTo() != null &&
-            travelOrder.getDateTo().isBefore(travelOrder.getDateFrom())) {
+        if (travelOrderDTO.getDateFrom() != null && travelOrderDTO.getDateTo() != null &&
+                travelOrderDTO.getDateTo().isBefore(travelOrderDTO.getDateFrom())) {
             throw new IllegalArgumentException("End date cannot be before start date");
         }
-        
+
+        // Convert DTO to entity
+        TravelOrder travelOrder = travelOrderMapper.toEntity(travelOrderDTO);
+
         // Auto-generate travel order number if not provided
         if (travelOrder.getTravelOrderNumber() == null) {
-            String generatedNumber = generateTravelOrderNumber(travelOrder.getLocationId());
+            String generatedNumber = generateTravelOrderNumber(travelOrderDTO.getLocationId());
             travelOrder.setTravelOrderNumber(generatedNumber);
         }
-        
-        // Set default status if not provided
-        if (travelOrder.getStatus() == null) {
-            travelOrder.setStatus("IN_PROGRESS");
-        }
-        
+
         // Set creation time
         if (travelOrder.getCreationTime() == null) {
             travelOrder.setCreationTime(LocalDateTime.now());
         }
-        
-        return travelOrderRepository.save(travelOrder);
+
+        // Save and return DTO
+        TravelOrder saved = travelOrderRepository.save(travelOrder);
+
+        // TODO: Handle driver and vehicle assignments if provided in DTO
+
+        return travelOrderMapper.toResponseDTO(saved);
     }
-    
+
     /**
      * Generate unique travel order number for a location
-     * Uses pessimistic locking to prevent race conditions
      */
     private String generateTravelOrderNumber(Long locationId) {
         int currentYear = LocalDate.now().getYear();
-        
+
         // Get or create counter with pessimistic lock (thread-safe)
         TravelOrderCounter counter = travelOrderCounterRepository
-            .findByLocationAndYearForUpdate(locationId, currentYear)
-            .orElseGet(() -> {
-                // Create new counter for this location/year
-                TravelOrderCounterId id = new TravelOrderCounterId(locationId, currentYear);
-                TravelOrderCounter newCounter = new TravelOrderCounter();
-                newCounter.setId(id);
-                newCounter.setLastNumber(0);
-                return newCounter;
-            });
-        
+                .findByLocationAndYearForUpdate(locationId, currentYear)
+                .orElseGet(() -> {
+                    TravelOrderCounterId id = new TravelOrderCounterId(locationId, currentYear);
+                    TravelOrderCounter newCounter = new TravelOrderCounter();
+                    newCounter.setId(id);
+                    newCounter.setLastNumber(0);
+                    return newCounter;
+                });
+
         // Increment counter
         int nextNumber = counter.getLastNumber() + 1;
         counter.setLastNumber(nextNumber);
         travelOrderCounterRepository.save(counter);
-        
-        // Format: LOC-YYYY-NNNN (e.g., 1-2025-0001)
+
+        // Format: LOC-YYYY-NNNN
         return String.format("%d-%d-%04d", locationId, currentYear, nextNumber);
     }
-    
+
     /**
-     * Update existing travel order
+     * Update existing travel order from DTO
      */
-    public TravelOrder updateTravelOrder(Long id, TravelOrder travelOrderDetails) {
+    @Transactional
+    public TravelOrderResponseDTO updateTravelOrder(Long id, TravelOrderRequestDTO travelOrderDTO) {
         TravelOrder travelOrder = travelOrderRepository.findById(id)
-            .orElseThrow(() -> new IllegalArgumentException("Travel order not found with id: " + id));
-        
+                .orElseThrow(() -> new IllegalArgumentException("Travel order not found with id: " + id));
+
         // Validation: Check if location exists
-        if (!locationUnitRepository.existsById(travelOrderDetails.getLocationId())) {
-            throw new IllegalArgumentException("Location not found with id: " + travelOrderDetails.getLocationId());
+        if (!locationUnitRepository.existsById(travelOrderDTO.getLocationId())) {
+            throw new IllegalArgumentException("Location not found with id: " + travelOrderDTO.getLocationId());
         }
-        
+
         // Validation: Check if work order number conflicts
-        if (travelOrderDetails.getWorkOrderNumber() != null &&
-            !travelOrderDetails.getWorkOrderNumber().equals(travelOrder.getWorkOrderNumber()) &&
-            travelOrderRepository.existsByWorkOrderNumber(travelOrderDetails.getWorkOrderNumber())) {
-            throw new IllegalArgumentException("Work order number '" + travelOrderDetails.getWorkOrderNumber() + "' already exists");
+        if (travelOrderDTO.getWorkOrderNumber() != null &&
+                !travelOrderDTO.getWorkOrderNumber().equals(travelOrder.getWorkOrderNumber()) &&
+                travelOrderRepository.existsByWorkOrderNumber(travelOrderDTO.getWorkOrderNumber())) {
+            throw new IllegalArgumentException("Work order number '" + travelOrderDTO.getWorkOrderNumber() + "' already exists");
         }
-        
+
         // Validation: Date range check
-        if (travelOrderDetails.getDateFrom() != null && travelOrderDetails.getDateTo() != null &&
-            travelOrderDetails.getDateTo().isBefore(travelOrderDetails.getDateFrom())) {
+        if (travelOrderDTO.getDateFrom() != null && travelOrderDTO.getDateTo() != null &&
+                travelOrderDTO.getDateTo().isBefore(travelOrderDTO.getDateFrom())) {
             throw new IllegalArgumentException("End date cannot be before start date");
         }
-        
-        // Update fields
-        travelOrder.setDateFrom(travelOrderDetails.getDateFrom());
-        travelOrder.setDateTo(travelOrderDetails.getDateTo());
-        travelOrder.setWorkOrderNumber(travelOrderDetails.getWorkOrderNumber());
-        travelOrder.setStartingMileage(travelOrderDetails.getStartingMileage());
-        travelOrder.setEndingMileage(travelOrderDetails.getEndingMileage());
-        travelOrder.setStatus(travelOrderDetails.getStatus());
-        // Note: locationId, travelOrderNumber, and createdByUserId should not be changed after creation
-        
-        return travelOrderRepository.save(travelOrder);
+
+        // Update entity from DTO
+        travelOrderMapper.updateEntity(travelOrder, travelOrderDTO);
+
+        // Save and return DTO
+        TravelOrder updated = travelOrderRepository.save(travelOrder);
+        return travelOrderMapper.toResponseDTO(updated);
     }
-    
+
     /**
      * Update travel order status
      */
-    public TravelOrder updateTravelOrderStatus(Long id, String status) {
+    @Transactional
+    public TravelOrderResponseDTO updateTravelOrderStatus(Long id, String status) {
         TravelOrder travelOrder = travelOrderRepository.findById(id)
-            .orElseThrow(() -> new IllegalArgumentException("Travel order not found with id: " + id));
-        
+                .orElseThrow(() -> new IllegalArgumentException("Travel order not found with id: " + id));
+
         // Validation: Status change rules
         if ("COMPLETED".equals(status)) {
-            // Ensure ending mileage is set
             if (travelOrder.getEndingMileage() == null) {
                 throw new IllegalArgumentException("Cannot complete travel order without ending mileage");
             }
-            // Ensure ending mileage >= starting mileage
-            if (travelOrder.getStartingMileage() != null && 
-                travelOrder.getEndingMileage() < travelOrder.getStartingMileage()) {
+            if (travelOrder.getStartingMileage() != null &&
+                    travelOrder.getEndingMileage() < travelOrder.getStartingMileage()) {
                 throw new IllegalArgumentException("Ending mileage cannot be less than starting mileage");
             }
         }
-        
+
         travelOrder.setStatus(status);
-        
-        return travelOrderRepository.save(travelOrder);
+
+        TravelOrder updated = travelOrderRepository.save(travelOrder);
+        return travelOrderMapper.toResponseDTO(updated);
     }
-    
+
     /**
-     * Complete travel order (set status to COMPLETED and set ending mileage)
+     * Complete travel order
      */
-    public TravelOrder completeTravelOrder(Long id, Long endingMileage) {
+    @Transactional
+    public TravelOrderResponseDTO completeTravelOrder(Long id, Long endingMileage) {
         TravelOrder travelOrder = travelOrderRepository.findById(id)
-            .orElseThrow(() -> new IllegalArgumentException("Travel order not found with id: " + id));
-        
+                .orElseThrow(() -> new IllegalArgumentException("Travel order not found with id: " + id));
+
         // Validation
         if (travelOrder.getStartingMileage() != null && endingMileage < travelOrder.getStartingMileage()) {
             throw new IllegalArgumentException("Ending mileage cannot be less than starting mileage");
         }
-        
+
         travelOrder.setEndingMileage(endingMileage);
         travelOrder.setStatus("COMPLETED");
-        
-        return travelOrderRepository.save(travelOrder);
+
+        TravelOrder updated = travelOrderRepository.save(travelOrder);
+        return travelOrderMapper.toResponseDTO(updated);
     }
-    
+
     /**
-     * Delete travel order by ID
+     * Delete travel order
      */
+    @Transactional
     public void deleteTravelOrder(Long id) {
         if (!travelOrderRepository.existsById(id)) {
             throw new IllegalArgumentException("Travel order not found with id: " + id);
         }
-        
-        // TODO: Additional validation - check if travel order can be deleted
-        // (e.g., only delete if status is DRAFT or CANCELLED)
-        
         travelOrderRepository.deleteById(id);
     }
-    
+
     /**
      * Check if travel order exists
      */
-    @Transactional(readOnly = true)
     public boolean travelOrderExists(Long id) {
         return travelOrderRepository.existsById(id);
     }

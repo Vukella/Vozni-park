@@ -1,6 +1,8 @@
 package com.example.vozni_park.service;
 
+import com.example.vozni_park.dto.response.BrandResponseDTO;
 import com.example.vozni_park.entity.Brand;
+import com.example.vozni_park.mapper.BrandMapper;
 import com.example.vozni_park.repository.BrandRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -10,84 +12,85 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
-@Transactional
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class BrandService {
-    
+
     private final BrandRepository brandRepository;
-    
+    private final BrandMapper brandMapper;
+
     /**
-     * Get all brands
+     * Get all brands - returns DTOs
      */
-    @Transactional(readOnly = true)
-    public List<Brand> getAllBrands() {
-        return brandRepository.findAll();
+    public List<BrandResponseDTO> getAllBrands() {
+        List<Brand> brands = brandRepository.findAll();
+        return brandMapper.toResponseDTOList(brands);
     }
-    
+
     /**
      * Get brand by ID
      */
-    @Transactional(readOnly = true)
-    public Optional<Brand> getBrandById(Long id) {
-        return brandRepository.findById(id);
+    public Optional<BrandResponseDTO> getBrandById(Long id) {
+        return brandRepository.findById(id)
+                .map(brandMapper::toResponseDTO);
     }
-    
+
     /**
      * Get brand by name
      */
-    @Transactional(readOnly = true)
-    public Optional<Brand> getBrandByName(String name) {
-        return brandRepository.findByName(name);
+    public Optional<BrandResponseDTO> getBrandByName(String name) {
+        return brandRepository.findByName(name)
+                .map(brandMapper::toResponseDTO);
     }
-    
+
     /**
      * Create new brand
      */
-    public Brand createBrand(Brand brand) {
+    @Transactional
+    public BrandResponseDTO createBrand(Brand brand) {
         // Validation: Check if brand with same name already exists
         if (brandRepository.existsByName(brand.getName())) {
             throw new IllegalArgumentException("Brand with name '" + brand.getName() + "' already exists");
         }
-        
-        return brandRepository.save(brand);
+
+        Brand saved = brandRepository.save(brand);
+        return brandMapper.toResponseDTO(saved);
     }
-    
+
     /**
      * Update existing brand
      */
-    public Brand updateBrand(Long id, Brand brandDetails) {
+    @Transactional
+    public BrandResponseDTO updateBrand(Long id, Brand brandDetails) {
         Brand brand = brandRepository.findById(id)
-            .orElseThrow(() -> new IllegalArgumentException("Brand not found with id: " + id));
-        
+                .orElseThrow(() -> new IllegalArgumentException("Brand not found with id: " + id));
+
         // Check if new name conflicts with existing brand
-        if (!brand.getName().equals(brandDetails.getName()) && 
-            brandRepository.existsByName(brandDetails.getName())) {
+        if (!brand.getName().equals(brandDetails.getName()) &&
+                brandRepository.existsByName(brandDetails.getName())) {
             throw new IllegalArgumentException("Brand with name '" + brandDetails.getName() + "' already exists");
         }
-        
+
         brand.setName(brandDetails.getName());
-        
-        return brandRepository.save(brand);
+
+        Brand updated = brandRepository.save(brand);
+        return brandMapper.toResponseDTO(updated);
     }
-    
+
     /**
      * Delete brand by ID
      */
+    @Transactional
     public void deleteBrand(Long id) {
         if (!brandRepository.existsById(id)) {
             throw new IllegalArgumentException("Brand not found with id: " + id);
         }
-        
-        // TODO: Check if brand has associated vehicle models before deleting
-        // This would prevent orphaned records
-        
         brandRepository.deleteById(id);
     }
-    
+
     /**
      * Check if brand exists
      */
-    @Transactional(readOnly = true)
     public boolean brandExists(Long id) {
         return brandRepository.existsById(id);
     }

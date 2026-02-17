@@ -117,6 +117,11 @@ public class VehicleController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+    @GetMapping("/available")
+    @Operation(summary = "Get available vehicles")
+    public ResponseEntity<List<VehicleResponseDTO>> getAvailableVehicles() {
+        return ResponseEntity.ok(vehicleService.getAvailableVehicles());
+    }
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Delete vehicle")

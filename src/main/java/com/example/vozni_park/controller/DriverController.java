@@ -28,6 +28,12 @@ public class DriverController {
         return ResponseEntity.ok(driverService.getAllDrivers());
     }
 
+    @GetMapping("/available")
+    @Operation(summary = "Get available drivers")
+    public ResponseEntity<List<DriverResponseDTO>> getAvailableDrivers() {
+        return ResponseEntity.ok(driverService.getAvailableDrivers());
+    }
+
     @GetMapping("/{id}")
     @Operation(summary = "Get driver by ID")
     public ResponseEntity<DriverResponseDTO> getDriverById(@PathVariable Long id) {
@@ -66,12 +72,6 @@ public class DriverController {
     @Operation(summary = "Get drivers without location")
     public ResponseEntity<List<DriverResponseDTO>> getDriversWithoutLocation() {
         return ResponseEntity.ok(driverService.getDriversWithoutLocation());
-    }
-
-    @GetMapping("/available")
-    @Operation(summary = "Get available drivers")
-    public ResponseEntity<List<DriverResponseDTO>> getAvailableDrivers() {
-        return ResponseEntity.ok(driverService.getAvailableDrivers());
     }
 
     @GetMapping("/{id}/available")

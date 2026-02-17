@@ -41,12 +41,11 @@ public class AppUser {
     @Column(name = "is_active")
     private Boolean isActive = true;
 
-    @Column(name = "role_id", nullable = false, insertable = false, updatable = false)
+    @Column(name = "role_id", nullable = false)
     private Long roleId;
 
-    // Relationships
-    @ManyToOne
-    @JoinColumn(name = "role_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "role_id", insertable = false, updatable = false)
     private Role role;
 
     @OneToMany(mappedBy = "user")

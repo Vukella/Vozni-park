@@ -6,6 +6,7 @@ import com.example.vozni_park.entity.*;
 import com.example.vozni_park.mapper.VehicleMapper;
 import com.example.vozni_park.repository.*;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,6 +16,7 @@ import java.util.Optional;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
+@Slf4j
 public class VehicleService {
 
     private final VehicleRepository vehicleRepository;
@@ -23,76 +25,162 @@ public class VehicleService {
     private final FuelTypeRepository fuelTypeRepository;
     private final RegistrationRepository registrationRepository;
     private final FirstAidKitRepository firstAidKitRepository;
+    private final LocationFilterService locationFilterService;
 
     /**
-     * Get all vehicles - returns DTOs to avoid lazy loading issues
+     * Get all vehicles - automatically filtered by user's location(s)
      */
     public List<VehicleResponseDTO> getAllVehicles() {
-        List<Vehicle> vehicles = vehicleRepository.findAll();
+        List<Vehicle> vehicles;
+
+        if (locationFilterService.isSuperAdmin()) {
+            // SUPER_ADMIN sees everything
+            log.debug("SUPER_ADMIN access - fetching all vehicles");
+            vehicles = vehicleRepository.findAll();
+        } else {
+            // LOCAL_ADMIN sees only their location(s)
+            List<Long> locationIds = locationFilterService.getCurrentUserLocationIds();
+            log.debug("LOCAL_ADMIN access - fetching vehicles for locations: {}", locationIds);
+            vehicles = vehicleRepository.findByLocationIds(locationIds);
+        }
+
         return vehicleMapper.toResponseDTOList(vehicles);
     }
 
     /**
-     * Get vehicle by ID
+     * Get vehicle by ID - validates location access
      */
     public Optional<VehicleResponseDTO> getVehicleById(Long id) {
-        return vehicleRepository.findById(id)
-                .map(vehicleMapper::toResponseDTO);
+        Optional<Vehicle> vehicle = vehicleRepository.findById(id);
+
+        // If not SUPER_ADMIN, validate location access
+        if (vehicle.isPresent() && !locationFilterService.isSuperAdmin()) {
+            Vehicle v = vehicle.get();
+            if (v.getVehicleLocation() != null) {
+                Long vehicleLocationId = v.getVehicleLocation().getLocationUnit().getIdLocationUnit();
+                if (!locationFilterService.hasAccessToLocation(vehicleLocationId)) {
+                    log.warn("User {} denied access to vehicle {} at location {}",
+                            locationFilterService.getCurrentUsername(), id, vehicleLocationId);
+                    return Optional.empty();
+                }
+            }
+        }
+
+        return vehicle.map(vehicleMapper::toResponseDTO);
     }
 
     /**
-     * Get vehicle by SAP number
+     * Get vehicle by SAP number - validates location access
      */
     public Optional<VehicleResponseDTO> getVehicleBySapNumber(Long sapNumber) {
-        return vehicleRepository.findBySapNumber(sapNumber)
-                .map(vehicleMapper::toResponseDTO);
+        Optional<Vehicle> vehicle = vehicleRepository.findBySapNumber(sapNumber);
+
+        // Validate location access
+        if (vehicle.isPresent() && !locationFilterService.isSuperAdmin()) {
+            Vehicle v = vehicle.get();
+            if (v.getVehicleLocation() != null) {
+                Long vehicleLocationId = v.getVehicleLocation().getLocationUnit().getIdLocationUnit();
+                if (!locationFilterService.hasAccessToLocation(vehicleLocationId)) {
+                    return Optional.empty();
+                }
+            }
+        }
+
+        return vehicle.map(vehicleMapper::toResponseDTO);
     }
 
     /**
-     * Get vehicle by chassis number
+     * Get vehicle by chassis number - validates location access
      */
     public Optional<VehicleResponseDTO> getVehicleByChassisNumber(String chassisNumber) {
-        return vehicleRepository.findByChassisNumber(chassisNumber)
-                .map(vehicleMapper::toResponseDTO);
+        Optional<Vehicle> vehicle = vehicleRepository.findByChassisNumber(chassisNumber);
+
+        // Validate location access
+        if (vehicle.isPresent() && !locationFilterService.isSuperAdmin()) {
+            Vehicle v = vehicle.get();
+            if (v.getVehicleLocation() != null) {
+                Long vehicleLocationId = v.getVehicleLocation().getLocationUnit().getIdLocationUnit();
+                if (!locationFilterService.hasAccessToLocation(vehicleLocationId)) {
+                    return Optional.empty();
+                }
+            }
+        }
+
+        return vehicle.map(vehicleMapper::toResponseDTO);
     }
 
     /**
-     * Get vehicles by status
+     * Get vehicles by status - location filtered
      */
     public List<VehicleResponseDTO> getVehiclesByStatus(String status) {
-        List<Vehicle> vehicles = vehicleRepository.findByVehicleStatus(status);
+        List<Vehicle> vehicles;
+
+        if (locationFilterService.isSuperAdmin()) {
+            vehicles = vehicleRepository.findByVehicleStatus(status);
+        } else {
+            List<Long> locationIds = locationFilterService.getCurrentUserLocationIds();
+            vehicles = vehicleRepository.findByLocationIdsAndStatus(locationIds, status);
+        }
+
         return vehicleMapper.toResponseDTOList(vehicles);
     }
 
     /**
-     * Get vehicles by location
+     * Get vehicles by location - validates location access
      */
     public List<VehicleResponseDTO> getVehiclesByLocation(Long locationId) {
+        // Validate location access
+        if (!locationFilterService.isSuperAdmin()) {
+            locationFilterService.validateLocationAccess(locationId);
+        }
+
         List<Vehicle> vehicles = vehicleRepository.findByLocationId(locationId);
         return vehicleMapper.toResponseDTOList(vehicles);
     }
 
     /**
-     * Get vehicles without location
+     * Get vehicles without location - location filtered
      */
     public List<VehicleResponseDTO> getVehiclesWithoutLocation() {
+        // Only SUPER_ADMIN can see unassigned vehicles
+        if (!locationFilterService.isSuperAdmin()) {
+            log.warn("LOCAL_ADMIN attempted to access unassigned vehicles");
+            throw new SecurityException("Only SUPER_ADMIN can view vehicles without location assignment");
+        }
+
         List<Vehicle> vehicles = vehicleRepository.findVehiclesWithoutLocation();
         return vehicleMapper.toResponseDTOList(vehicles);
     }
 
     /**
-     * Get vehicles by model
+     * Get vehicles by model - location filtered
      */
     public List<VehicleResponseDTO> getVehiclesByModel(Long modelId) {
-        List<Vehicle> vehicles = vehicleRepository.findByVehicleModelId(modelId);
+        List<Vehicle> vehicles;
+
+        if (locationFilterService.isSuperAdmin()) {
+            vehicles = vehicleRepository.findByVehicleModelId(modelId);
+        } else {
+            List<Long> locationIds = locationFilterService.getCurrentUserLocationIds();
+            vehicles = vehicleRepository.findByLocationIdsAndModel(locationIds, modelId);
+        }
+
         return vehicleMapper.toResponseDTOList(vehicles);
     }
 
     /**
-     * Get vehicles by fuel type
+     * Get vehicles by fuel type - location filtered
      */
     public List<VehicleResponseDTO> getVehiclesByFuelType(Long fuelTypeId) {
-        List<Vehicle> vehicles = vehicleRepository.findByFuelTypeId(fuelTypeId);
+        List<Vehicle> vehicles;
+
+        if (locationFilterService.isSuperAdmin()) {
+            vehicles = vehicleRepository.findByFuelTypeId(fuelTypeId);
+        } else {
+            List<Long> locationIds = locationFilterService.getCurrentUserLocationIds();
+            vehicles = vehicleRepository.findByLocationIdsAndFuelType(locationIds, fuelTypeId);
+        }
+
         return vehicleMapper.toResponseDTOList(vehicles);
     }
 
@@ -125,12 +213,18 @@ public class VehicleService {
     }
 
     /**
-     * Update existing vehicle from DTO
+     * Update existing vehicle from DTO - validates location access
      */
     @Transactional
     public VehicleResponseDTO updateVehicle(Long id, VehicleRequestDTO vehicleDTO) {
         Vehicle vehicle = vehicleRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Vehicle not found with id: " + id));
+
+        // Validate location access for LOCAL_ADMIN
+        if (!locationFilterService.isSuperAdmin() && vehicle.getVehicleLocation() != null) {
+            Long vehicleLocationId = vehicle.getVehicleLocation().getLocationUnit().getIdLocationUnit();
+            locationFilterService.validateLocationAccess(vehicleLocationId);
+        }
 
         // Validation: Check if new SAP number conflicts
         if (vehicleDTO.getSapNumber() != null &&
@@ -158,12 +252,18 @@ public class VehicleService {
     }
 
     /**
-     * Update vehicle status
+     * Update vehicle status - validates location access
      */
     @Transactional
     public VehicleResponseDTO updateVehicleStatus(Long id, String status, Integer statusCode) {
         Vehicle vehicle = vehicleRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Vehicle not found with id: " + id));
+
+        // Validate location access
+        if (!locationFilterService.isSuperAdmin() && vehicle.getVehicleLocation() != null) {
+            Long vehicleLocationId = vehicle.getVehicleLocation().getLocationUnit().getIdLocationUnit();
+            locationFilterService.validateLocationAccess(vehicleLocationId);
+        }
 
         vehicle.setVehicleStatus(status);
         if (statusCode != null) {
@@ -175,13 +275,19 @@ public class VehicleService {
     }
 
     /**
-     * Delete vehicle
+     * Delete vehicle - validates location access
      */
     @Transactional
     public void deleteVehicle(Long id) {
-        if (!vehicleRepository.existsById(id)) {
-            throw new IllegalArgumentException("Vehicle not found with id: " + id);
+        Vehicle vehicle = vehicleRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Vehicle not found with id: " + id));
+
+        // Validate location access
+        if (!locationFilterService.isSuperAdmin() && vehicle.getVehicleLocation() != null) {
+            Long vehicleLocationId = vehicle.getVehicleLocation().getLocationUnit().getIdLocationUnit();
+            locationFilterService.validateLocationAccess(vehicleLocationId);
         }
+
         vehicleRepository.deleteById(id);
     }
 
@@ -219,5 +325,14 @@ public class VehicleService {
         VehicleModel vehicleModel = vehicleModelRepository.findById(dto.getVehicleModelId())
                 .orElseThrow(() -> new IllegalArgumentException("Vehicle model with ID " + dto.getVehicleModelId() + " not found"));
         vehicle.setVehicleModel(vehicleModel);
+    }
+
+    @Transactional(readOnly = true)
+    public List<VehicleResponseDTO> getAvailableVehicles() {
+        List<Long> locationIds = locationFilterService.getCurrentUserLocationIds();
+        List<Vehicle> vehicles = (locationIds == null || locationIds.isEmpty())
+                ? vehicleRepository.findAvailableVehicles()
+                : vehicleRepository.findAvailableVehiclesByLocations(locationIds);
+        return vehicleMapper.toResponseDTOList(vehicles);
     }
 }

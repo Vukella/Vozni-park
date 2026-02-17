@@ -14,6 +14,8 @@ public interface DriverLocationRepository extends JpaRepository<DriverLocation, 
     Optional<DriverLocation> findByDriverId(Long driverId);
     
     List<DriverLocation> findByLocationUnitId(Long locationUnitId);
+
+    List<DriverLocation> findByLocationUnitIdIn(List<Long> locationIds);
     
     boolean existsByDriverId(Long driverId);
 }

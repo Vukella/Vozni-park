@@ -14,6 +14,8 @@ public interface VehicleLocationRepository extends JpaRepository<VehicleLocation
     Optional<VehicleLocation> findByVehicleId(Long vehicleId);
     
     List<VehicleLocation> findByLocationUnitId(Long locationUnitId);
+
+    List<VehicleLocation> findByLocationUnitIdIn(List<Long> locationIds);
     
     boolean existsByVehicleId(Long vehicleId);
 }

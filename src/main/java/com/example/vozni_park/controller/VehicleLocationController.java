@@ -1,6 +1,6 @@
 package com.example.vozni_park.controller;
 
-import com.example.vozni_park.entity.VehicleLocation;
+import com.example.vozni_park.dto.response.VehicleLocationResponseDTO;
 import com.example.vozni_park.service.VehicleLocationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -14,55 +14,60 @@ import java.util.List;
 @RequiredArgsConstructor
 @CrossOrigin(origins = "*")
 public class VehicleLocationController {
-    
+
     private final VehicleLocationService vehicleLocationService;
-    
+
     @GetMapping
-    public ResponseEntity<List<VehicleLocation>> getAllVehicleLocations() {
+    public ResponseEntity<List<VehicleLocationResponseDTO>> getAllVehicleLocations() {
         return ResponseEntity.ok(vehicleLocationService.getAllVehicleLocations());
     }
-    
+
     @GetMapping("/{id}")
-    public ResponseEntity<VehicleLocation> getVehicleLocationById(@PathVariable Long id) {
-        return vehicleLocationService.getVehicleLocationById(id)
-            .map(ResponseEntity::ok)
-            .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<?> getVehicleLocationById(@PathVariable Long id) {
+        try {
+            return ResponseEntity.ok(vehicleLocationService.getVehicleLocationById(id));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
-    
+
     @GetMapping("/vehicle/{vehicleId}")
-    public ResponseEntity<VehicleLocation> getVehicleLocationByVehicleId(@PathVariable Long vehicleId) {
-        return vehicleLocationService.getVehicleLocationByVehicleId(vehicleId)
-            .map(ResponseEntity::ok)
-            .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<?> getVehicleLocationByVehicleId(@PathVariable Long vehicleId) {
+        try {
+            return ResponseEntity.ok(vehicleLocationService.getVehicleLocationByVehicleId(vehicleId));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
-    
+
     @GetMapping("/location/{locationUnitId}")
-    public ResponseEntity<List<VehicleLocation>> getVehicleLocationsByLocationUnitId(@PathVariable Long locationUnitId) {
-        return ResponseEntity.ok(vehicleLocationService.getVehicleLocationsByLocationUnitId(locationUnitId));
+    public ResponseEntity<List<VehicleLocationResponseDTO>> getVehicleLocationsByLocationUnitId(
+            @PathVariable Long locationUnitId) {
+        return ResponseEntity.ok(
+                vehicleLocationService.getVehicleLocationsByLocationUnitId(locationUnitId));
     }
-    
+
     @PostMapping
-    public ResponseEntity<?> assignVehicleToLocation(
-            @RequestParam Long vehicleId,
-            @RequestParam Long locationUnitId) {
+    public ResponseEntity<?> assignVehicleToLocation(@RequestParam Long vehicleId,
+                                                     @RequestParam Long locationUnitId) {
         try {
-            VehicleLocation created = vehicleLocationService.assignVehicleToLocation(vehicleId, locationUnitId);
-            return ResponseEntity.status(HttpStatus.CREATED).body(created);
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(vehicleLocationService.assignVehicleToLocation(vehicleId, locationUnitId));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
-    
+
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateVehicleLocation(@PathVariable Long id, @RequestParam Long locationUnitId) {
+    public ResponseEntity<?> updateVehicleLocation(@PathVariable Long id,
+                                                   @RequestParam Long locationUnitId) {
         try {
-            VehicleLocation updated = vehicleLocationService.updateVehicleLocation(id, locationUnitId);
-            return ResponseEntity.ok(updated);
+            return ResponseEntity.ok(vehicleLocationService.updateVehicleLocation(id, locationUnitId));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
-    
+
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteVehicleLocation(@PathVariable Long id) {
         try {

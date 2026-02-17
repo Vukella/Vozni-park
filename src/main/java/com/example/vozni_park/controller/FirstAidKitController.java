@@ -1,5 +1,6 @@
 package com.example.vozni_park.controller;
 
+import com.example.vozni_park.dto.response.FirstAidKitResponseDTO;
 import com.example.vozni_park.entity.FirstAidKit;
 import com.example.vozni_park.service.FirstAidKitService;
 import lombok.RequiredArgsConstructor;
@@ -14,56 +15,60 @@ import java.util.List;
 @RequiredArgsConstructor
 @CrossOrigin(origins = "*")
 public class FirstAidKitController {
-    
+
     private final FirstAidKitService firstAidKitService;
-    
+
     @GetMapping
-    public ResponseEntity<List<FirstAidKit>> getAllFirstAidKits() {
+    public ResponseEntity<List<FirstAidKitResponseDTO>> getAllFirstAidKits() {
         return ResponseEntity.ok(firstAidKitService.getAllFirstAidKits());
     }
-    
+
     @GetMapping("/{id}")
-    public ResponseEntity<FirstAidKit> getFirstAidKitById(@PathVariable Long id) {
-        return firstAidKitService.getFirstAidKitById(id)
-            .map(ResponseEntity::ok)
-            .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<?> getFirstAidKitById(@PathVariable Long id) {
+        try {
+            return ResponseEntity.ok(firstAidKitService.getFirstAidKitById(id));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
-    
+
     @GetMapping("/status/{status}")
-    public ResponseEntity<List<FirstAidKit>> getFirstAidKitsByStatus(@PathVariable String status) {
+    public ResponseEntity<List<FirstAidKitResponseDTO>> getFirstAidKitsByStatus(
+            @PathVariable String status) {
         return ResponseEntity.ok(firstAidKitService.getFirstAidKitsByStatus(status));
     }
-    
+
     @GetMapping("/expiring-soon")
-    public ResponseEntity<List<FirstAidKit>> getExpiringSoon(@RequestParam(defaultValue = "30") int days) {
+    public ResponseEntity<List<FirstAidKitResponseDTO>> getExpiringSoon(
+            @RequestParam(defaultValue = "30") int days) {
         return ResponseEntity.ok(firstAidKitService.getExpiringSoon(days));
     }
-    
+
     @GetMapping("/expired")
-    public ResponseEntity<List<FirstAidKit>> getExpired() {
+    public ResponseEntity<List<FirstAidKitResponseDTO>> getExpired() {
         return ResponseEntity.ok(firstAidKitService.getExpired());
     }
-    
+
     @PostMapping
     public ResponseEntity<?> createFirstAidKit(@RequestBody FirstAidKit firstAidKit) {
         try {
-            FirstAidKit created = firstAidKitService.createFirstAidKit(firstAidKit);
-            return ResponseEntity.status(HttpStatus.CREATED).body(created);
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(firstAidKitService.createFirstAidKit(firstAidKit));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
-    
+
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateFirstAidKit(@PathVariable Long id, @RequestBody FirstAidKit firstAidKit) {
+    public ResponseEntity<?> updateFirstAidKit(@PathVariable Long id,
+                                               @RequestBody FirstAidKit firstAidKit) {
         try {
-            FirstAidKit updated = firstAidKitService.updateFirstAidKit(id, firstAidKit);
-            return ResponseEntity.ok(updated);
+            return ResponseEntity.ok(firstAidKitService.updateFirstAidKit(id, firstAidKit));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
-    
+
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteFirstAidKit(@PathVariable Long id) {
         try {

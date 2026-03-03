@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -86,9 +87,13 @@ public class TravelOrderController {
 
     @PostMapping
     @Operation(summary = "Create new travel order")
-    public ResponseEntity<?> createTravelOrder(@Valid @RequestBody TravelOrderRequestDTO travelOrderDTO) {
+    public ResponseEntity<?> createTravelOrder(
+            @Valid @RequestBody TravelOrderRequestDTO travelOrderDTO,
+            Authentication authentication
+    ) {
         try {
-            TravelOrderResponseDTO created = travelOrderService.createTravelOrder(travelOrderDTO);
+            String username = authentication.getName();
+            TravelOrderResponseDTO created = travelOrderService.createTravelOrder(travelOrderDTO, username);
             return ResponseEntity.status(HttpStatus.CREATED).body(created);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());

@@ -54,9 +54,6 @@ public class TravelOrder {
     @Column(name = "created_by_user_id", insertable = false, updatable = false)
     private Long createdByUserId;
 
-    @Column(name = "location_id", insertable = false, updatable = false)
-    private Long locationId;
-
     // Relationships
     @ManyToOne
     @JoinColumn(name = "created_by_user_id")

@@ -16,11 +16,11 @@ public interface TravelOrderRepository extends JpaRepository<TravelOrder, Long> 
     // Custom query methods
     Optional<TravelOrder> findByWorkOrderNumber(String workOrderNumber);
 
-    Optional<TravelOrder> findByLocationIdAndTravelOrderNumber(Long locationId, String travelOrderNumber);
+    Optional<TravelOrder> findByLocation_IdLocationUnitAndTravelOrderNumber(Long locationId, String travelOrderNumber);
 
     List<TravelOrder> findByStatus(String status);
 
-    List<TravelOrder> findByLocationId(Long locationId);
+    List<TravelOrder> findByLocation_IdLocationUnit(Long locationId);
 
     List<TravelOrder> findByCreatedByUserId(Long userId);
 
@@ -29,8 +29,8 @@ public interface TravelOrderRepository extends JpaRepository<TravelOrder, Long> 
     List<TravelOrder> findByDateRange(LocalDate startDate, LocalDate endDate);
 
     // Find active travel orders for a location
-    @Query("SELECT t FROM TravelOrder t WHERE t.locationId = :locationId AND t.status = 'IN_PROGRESS'")
-    List<TravelOrder> findActiveByLocation(Long locationId);
+    @Query("SELECT t FROM TravelOrder t WHERE t.location.idLocationUnit = :locationId AND t.status = 'IN_PROGRESS'")
+    List<TravelOrder> findActiveByLocation(@Param("locationId") Long locationId);
 
     // Find travel orders by driver
     @Query("SELECT t FROM TravelOrder t JOIN t.driverTravelOrders dto WHERE dto.driver.idDriver = :driverId")

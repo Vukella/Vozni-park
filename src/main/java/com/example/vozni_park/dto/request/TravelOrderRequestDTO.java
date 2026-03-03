@@ -36,9 +36,6 @@ public class TravelOrderRequestDTO {
     @Size(max = 20, message = "Status must not exceed 20 characters")
     private String status;
 
-    @NotNull(message = "Created by user ID is required")
-    private Long createdByUserId;
-
     @NotNull(message = "Location ID is required")
     private Long locationId;
 

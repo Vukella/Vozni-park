@@ -2,8 +2,7 @@ package com.example.vozni_park.service;
 
 import com.example.vozni_park.dto.request.TravelOrderRequestDTO;
 import com.example.vozni_park.dto.response.TravelOrderResponseDTO;
-import com.example.vozni_park.entity.TravelOrder;
-import com.example.vozni_park.entity.TravelOrderCounter;
+import com.example.vozni_park.entity.*;
 import com.example.vozni_park.entity.embeddable.TravelOrderCounterId;
 import com.example.vozni_park.mapper.TravelOrderMapper;
 import com.example.vozni_park.repository.*;
@@ -29,6 +28,10 @@ public class TravelOrderService {
     private final LocationUnitRepository locationUnitRepository;
     private final AppUserRepository appUserRepository;
     private final LocationFilterService locationFilterService;
+    private final DriverRepository driverRepository;
+    private final VehicleRepository vehicleRepository;
+    private final DriverTravelOrderRepository driverTravelOrderRepository;
+    private final TravelOrderVehicleRepository travelOrderVehicleRepository;
 
     /**
      * Get all travel orders - automatically filtered by user's location(s)
@@ -113,7 +116,7 @@ public class TravelOrderService {
             locationFilterService.validateLocationAccess(locationId);
         }
 
-        List<TravelOrder> travelOrders = travelOrderRepository.findByLocationId(locationId);
+        List<TravelOrder> travelOrders = travelOrderRepository.findByLocation_IdLocationUnit(locationId);
         return travelOrderMapper.toResponseDTOList(travelOrders);
     }
 
@@ -182,55 +185,112 @@ public class TravelOrderService {
      * Create new travel order from DTO - validates location access
      */
     @Transactional
-    public TravelOrderResponseDTO createTravelOrder(TravelOrderRequestDTO travelOrderDTO) {
-        // Validation: Check if location exists
+    public TravelOrderResponseDTO createTravelOrder(TravelOrderRequestDTO travelOrderDTO, String username) {
+
+        // 0) Resolve creator from username (JWT)
+        AppUser creator = appUserRepository.findByUsername(username)
+                .orElseThrow(() -> new IllegalArgumentException("Authenticated user not found: " + username));
+
+        // 1) Validation: Check if location exists
         if (!locationUnitRepository.existsById(travelOrderDTO.getLocationId())) {
             throw new IllegalArgumentException("Location not found with id: " + travelOrderDTO.getLocationId());
         }
 
-        // Validation: LOCAL_ADMIN can only create orders for their assigned location(s)
+        // 2) Validation: LOCAL_ADMIN can only create orders for their assigned location(s)
         if (!locationFilterService.isSuperAdmin()) {
             locationFilterService.validateLocationAccess(travelOrderDTO.getLocationId());
         }
 
-        // Validation: Check if created by user exists
-        if (travelOrderDTO.getCreatedByUserId() != null &&
-                !appUserRepository.existsById(travelOrderDTO.getCreatedByUserId())) {
-            throw new IllegalArgumentException("User not found with id: " + travelOrderDTO.getCreatedByUserId());
-        }
-
-        // Validation: Check if work order number already exists
+        // 3) Validation: Check if work order number already exists
         if (travelOrderDTO.getWorkOrderNumber() != null &&
                 travelOrderRepository.existsByWorkOrderNumber(travelOrderDTO.getWorkOrderNumber())) {
             throw new IllegalArgumentException("Work order number '" + travelOrderDTO.getWorkOrderNumber() + "' already exists");
         }
 
-        // Validation: Date range check
+        // 4) Validation: Date range check
         if (travelOrderDTO.getDateFrom() != null && travelOrderDTO.getDateTo() != null &&
                 travelOrderDTO.getDateTo().isBefore(travelOrderDTO.getDateFrom())) {
             throw new IllegalArgumentException("End date cannot be before start date");
         }
 
-        // Convert DTO to entity
+        // 5) Convert DTO to entity
         TravelOrder travelOrder = travelOrderMapper.toEntity(travelOrderDTO);
 
-        // Auto-generate travel order number if not provided
+        LocationUnit location = locationUnitRepository.findById(travelOrderDTO.getLocationId())
+                .orElseThrow(() -> new IllegalArgumentException("Location not found with id: " + travelOrderDTO.getLocationId()));
+
+        travelOrder.setLocation(location);
+
+        // 6) FORCE createdBy from token
+        travelOrder.setCreatedByUser(creator);
+
+        // 7) Auto-generate travel order number if not provided
         if (travelOrder.getTravelOrderNumber() == null) {
             String generatedNumber = generateTravelOrderNumber(travelOrderDTO.getLocationId());
             travelOrder.setTravelOrderNumber(generatedNumber);
         }
 
-        // Set creation time
+        // 8) Set creation time
         if (travelOrder.getCreationTime() == null) {
             travelOrder.setCreationTime(LocalDateTime.now());
         }
 
-        // Save and return DTO
+        // 8.1) Default status if mapper didn't set it
+        if (travelOrder.getStatus() == null) {
+            travelOrder.setStatus("IN_PROGRESS");
+        }
+
         TravelOrder saved = travelOrderRepository.save(travelOrder);
 
-        // TODO: Handle driver and vehicle assignments if provided in DTO
+        // 9) Save drivers (join table)
+        if (travelOrderDTO.getDriverIds() != null && !travelOrderDTO.getDriverIds().isEmpty()) {
+            var drivers = driverRepository.findAllById(travelOrderDTO.getDriverIds());
 
-        return travelOrderMapper.toResponseDTO(saved);
+            if (drivers.size() != travelOrderDTO.getDriverIds().size()) {
+                throw new IllegalArgumentException("Some driver IDs do not exist");
+            }
+
+            var links = drivers.stream().map(d -> {
+                var link = new DriverTravelOrder();
+
+                // ✅ CRITICAL: EmbeddedId must not be null when using @MapsId
+                link.setId(new com.example.vozni_park.entity.embeddable.DriverTravelOrderId());
+
+                link.setTravelOrder(saved);
+                link.setDriver(d);
+                return link;
+            }).toList();
+
+            driverTravelOrderRepository.saveAll(links);
+        }
+
+        // 10) Save vehicles (join table)
+        if (travelOrderDTO.getVehicleIds() != null && !travelOrderDTO.getVehicleIds().isEmpty()) {
+            var vehicles = vehicleRepository.findAllById(travelOrderDTO.getVehicleIds());
+
+            if (vehicles.size() != travelOrderDTO.getVehicleIds().size()) {
+                throw new IllegalArgumentException("Some vehicle IDs do not exist");
+            }
+
+            var links = vehicles.stream().map(v -> {
+                var link = new TravelOrderVehicle();
+
+                // ✅ CRITICAL: EmbeddedId must not be null when using @MapsId
+                link.setId(new com.example.vozni_park.entity.embeddable.TravelOrderVehicleId());
+
+                link.setTravelOrder(saved);
+                link.setVehicle(v);
+                return link;
+            }).toList();
+
+            travelOrderVehicleRepository.saveAll(links);
+        }
+
+        // Re-fetch (optional, but good if mapper reads lazy collections)
+        TravelOrder full = travelOrderRepository.findById(saved.getIdTravelOrder())
+                .orElseThrow();
+
+        return travelOrderMapper.toResponseDTO(full);
     }
 
     /**

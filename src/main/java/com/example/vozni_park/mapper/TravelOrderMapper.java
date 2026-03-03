@@ -107,10 +107,6 @@ public class TravelOrderMapper {
         travelOrder.setEndingMileage(dto.getEndingMileage());
         travelOrder.setStatus(dto.getStatus() != null ? dto.getStatus() : "IN_PROGRESS");
 
-        // Set foreign key IDs (entities will be set by service layer)
-        travelOrder.setCreatedByUserId(dto.getCreatedByUserId());
-        travelOrder.setLocationId(dto.getLocationId());
-
         return travelOrder;
     }
 
@@ -131,8 +127,7 @@ public class TravelOrderMapper {
         if (dto.getStatus() != null) {
             travelOrder.setStatus(dto.getStatus());
         }
-        travelOrder.setCreatedByUserId(dto.getCreatedByUserId());
-        travelOrder.setLocationId(dto.getLocationId());
+
     }
 
     /**

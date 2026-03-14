@@ -59,6 +59,9 @@ databaseChangeLog:
             tableName: location_unit
             columns:
               - column:
+                  name: id_location_unit
+                  valueNumeric: 3
+              - column:
                   name: location_name
                   value: "Belgrade HQ"
               - column:
@@ -67,6 +70,9 @@ databaseChangeLog:
         - insert:
             tableName: location_unit
             columns:
+              - column:
+                  name: id_location_unit
+                  valueNumeric: 4
               - column:
                   name: location_name
                   value: "Novi Sad Unit"
@@ -130,12 +136,63 @@ databaseChangeLog:
                   valueNumeric: 3
 
   - changeSet:
-      id: 506-seed-test-user
+      id: 506-seed-users
       author: nemanja
       changes:
         - insert:
             tableName: app_user
             columns:
+              - column:
+                  name: id_user
+                  valueNumeric: 2
+              - column:
+                  name: username
+                  value: "testuser"
+              - column:
+                  name: role_id
+                  valueNumeric: 1
+              - column:
+                  name: full_name
+                  value: "Test User"
+              - column:
+                  name: password_hash
+                  value: "$2a$10$eBWfHrn0knalkrGcq2cSc.6ffYahdateEYwzI5vmGmK76XSjdmDxW"
+              - column:
+                  name: failed_login_attempts
+                  valueNumeric: 0
+              - column:
+                  name: is_active
+                  valueNumeric: 1
+        - insert:
+            tableName: app_user
+            columns:
+              - column:
+                  name: id_user
+                  valueNumeric: 3
+              - column:
+                  name: username
+                  value: "testuser3"
+              - column:
+                  name: role_id
+                  valueNumeric: 1
+              - column:
+                  name: full_name
+                  value: "Test User 3"
+              - column:
+                  name: password_hash
+                  value: "$2a$10$/d6KyVv7G4tM1JBFjALPwu0SX0CMYZFPcVpC.pLGmhgJS/c6GC2PG"
+              - column:
+                  name: failed_login_attempts
+                  valueNumeric: 0
+              - column:
+                  name: is_active
+                  valueNumeric: 1
+        - insert:
+            tableName: app_user
+            columns:
+              - column:
+                  name: id_user
+                  valueNumeric: 4
               - column:
                   name: username
                   value: "admin"
@@ -144,10 +201,37 @@ databaseChangeLog:
                   valueNumeric: 1
               - column:
                   name: full_name
-                  value: "Admin User"
+                  value: "Administrator"
               - column:
                   name: password_hash
-                  value: "admin123"
+                  value: "$2a$10$pkOPaCoS543lBwra1uS19eanBBuizTqtgEvuAprKwQTK9WpZvxwJ2"
+              - column:
+                  name: failed_login_attempts
+                  valueNumeric: 0
+              - column:
+                  name: is_active
+                  valueNumeric: 1
+        - insert:
+            tableName: app_user
+            columns:
+              - column:
+                  name: id_user
+                  valueNumeric: 5
+              - column:
+                  name: username
+                  value: "testUserBelgrade"
+              - column:
+                  name: role_id
+                  valueNumeric: 2
+              - column:
+                  name: full_name
+                  value: "Belgrade"
+              - column:
+                  name: password_hash
+                  value: "$2a$10$Jk/GamDcT9vXXLwMH8n2Te6Nq1L2jTDgGyaNPlpj6JqLRxp65r9Ai"
+              - column:
+                  name: failed_login_attempts
+                  valueNumeric: 0
               - column:
                   name: is_active
                   valueNumeric: 1
@@ -197,3 +281,17 @@ databaseChangeLog:
               - column:
                   name: vehicle_status
                   value: "ACTIVE"
+
+  - changeSet:
+      id: 509-seed-user-locations
+      author: nemanja
+      changes:
+        - insert:
+            tableName: user_location
+            columns:
+              - column:
+                  name: user_id
+                  valueNumeric: 5
+              - column:
+                  name: location_id
+                  valueNumeric: 3

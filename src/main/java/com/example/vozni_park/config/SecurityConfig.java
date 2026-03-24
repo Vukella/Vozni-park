@@ -37,7 +37,16 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
 
                 // Configure CORS
-                .cors(cors -> cors.disable()) // For now, allowing all origins via @CrossOrigin
+                .cors(cors -> cors.configurationSource(request -> {
+                    var config = new org.springframework.web.cors.CorsConfiguration();
+                    config.setAllowedOrigins(java.util.List.of(
+                            "https://vozni-park-frontend.azurewebsites.net"
+                    ));
+                    config.setAllowedMethods(java.util.List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+                    config.setAllowedHeaders(java.util.List.of("*"));
+                    config.setAllowCredentials(false);
+                    return config;
+                }))
 
                 // Configure exception handling
                 .exceptionHandling(exception -> exception

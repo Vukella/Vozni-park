@@ -13,7 +13,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/drivers-licenses")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 public class DriversLicenseController {
 
     private final DriversLicenseService driversLicenseService;

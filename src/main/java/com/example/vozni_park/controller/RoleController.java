@@ -14,7 +14,6 @@ import java.util.List;
 @RequestMapping("/api/roles")
 @PreAuthorize("hasRole('SUPER_ADMIN')")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 public class RoleController {
     
     private final RoleService roleService;

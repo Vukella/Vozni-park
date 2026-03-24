@@ -16,7 +16,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/vehicles")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 @Tag(name = "Vehicle Management", description = "APIs for managing vehicles in the fleet")
 public class VehicleController {
 

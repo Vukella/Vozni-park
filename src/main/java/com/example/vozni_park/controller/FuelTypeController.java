@@ -13,7 +13,6 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/fuel-types")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 public class FuelTypeController {
 
     private final FuelTypeService fuelTypeService;

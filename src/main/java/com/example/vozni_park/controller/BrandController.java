@@ -15,7 +15,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/brands")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 @Tag(name = "Brand Management", description = "APIs for managing vehicle brands")
 public class BrandController {
 

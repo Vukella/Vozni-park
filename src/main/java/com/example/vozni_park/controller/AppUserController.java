@@ -18,7 +18,6 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 @Tag(name = "User Management", description = "APIs for managing application users")
 public class AppUserController {
 

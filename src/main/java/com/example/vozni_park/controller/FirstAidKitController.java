@@ -13,7 +13,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/first-aid-kits")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 public class FirstAidKitController {
 
     private final FirstAidKitService firstAidKitService;

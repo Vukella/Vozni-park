@@ -19,7 +19,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/travel-orders")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 @Tag(name = "Travel Order Management", description = "APIs for managing travel orders")
 public class TravelOrderController {
 

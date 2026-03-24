@@ -16,7 +16,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/drivers")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 @Tag(name = "Driver Management", description = "APIs for managing drivers")
 public class DriverController {
 

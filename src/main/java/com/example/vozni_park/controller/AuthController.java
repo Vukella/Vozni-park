@@ -26,7 +26,6 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 @Tag(name = "Authentication", description = "APIs for user authentication and token management")
 @Slf4j
 public class AuthController {

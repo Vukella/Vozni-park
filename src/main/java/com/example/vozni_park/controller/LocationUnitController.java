@@ -15,7 +15,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/locations")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 @Tag(name = "Location Management", description = "APIs for managing location units")
 public class LocationUnitController {
 

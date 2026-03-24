@@ -12,7 +12,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/driver-locations")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 public class DriverLocationController {
 
     private final DriverLocationService driverLocationService;

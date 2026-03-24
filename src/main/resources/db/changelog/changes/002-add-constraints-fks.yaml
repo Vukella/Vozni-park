@@ -5,6 +5,12 @@ databaseChangeLog:
   - changeSet:
       id: 101-pk-travel-order-counter
       author: nemanja
+      preConditions:
+        onFail: MARK_RAN
+        not:
+          primaryKeyExists:
+            tableName: travel_order_counter
+            schemaName: vozni_park
       changes:
         - addPrimaryKey:
             tableName: travel_order_counter
@@ -14,6 +20,12 @@ databaseChangeLog:
   - changeSet:
       id: 102-pk-driver-travel-order
       author: nemanja
+      preConditions:
+        onFail: MARK_RAN
+        not:
+          primaryKeyExists:
+            tableName: driver_travel_order
+            schemaName: vozni_park
       changes:
         - addPrimaryKey:
             tableName: driver_travel_order
@@ -23,6 +35,12 @@ databaseChangeLog:
   - changeSet:
       id: 103-pk-travel-order-vehicle
       author: nemanja
+      preConditions:
+        onFail: MARK_RAN
+        not:
+          primaryKeyExists:
+            tableName: travel_order_vehicle
+            schemaName: vozni_park
       changes:
         - addPrimaryKey:
             tableName: travel_order_vehicle
@@ -32,6 +50,12 @@ databaseChangeLog:
   - changeSet:
       id: 104-pk-user-location
       author: nemanja
+      preConditions:
+        onFail: MARK_RAN
+        not:
+          primaryKeyExists:
+            tableName: user_location
+            schemaName: vozni_park
       changes:
         - addPrimaryKey:
             tableName: user_location
@@ -43,6 +67,13 @@ databaseChangeLog:
   - changeSet:
       id: 201-unique-vehicle-location-vehicle
       author: nemanja
+      preConditions:
+        onFail: MARK_RAN
+        not:
+          uniqueConstraintExists:
+            tableName: vehicle_location
+            constraintName: uq_vehicle_location_vehicle
+            schemaName: vozni_park
       changes:
         - addUniqueConstraint:
             tableName: vehicle_location
@@ -52,6 +83,13 @@ databaseChangeLog:
   - changeSet:
       id: 202-unique-driver-sap
       author: nemanja
+      preConditions:
+        onFail: MARK_RAN
+        not:
+          uniqueConstraintExists:
+            tableName: driver
+            constraintName: uq_driver_sap_number
+            schemaName: vozni_park
       changes:
         - addUniqueConstraint:
             tableName: driver
@@ -61,6 +99,13 @@ databaseChangeLog:
   - changeSet:
       id: 203-unique-driver-location-driver
       author: nemanja
+      preConditions:
+        onFail: MARK_RAN
+        not:
+          uniqueConstraintExists:
+            tableName: driver_location
+            constraintName: uq_driver_location_driver
+            schemaName: vozni_park
       changes:
         - addUniqueConstraint:
             tableName: driver_location
@@ -70,6 +115,13 @@ databaseChangeLog:
   - changeSet:
       id: 204-unique-driver-license-assignment
       author: nemanja
+      preConditions:
+        onFail: MARK_RAN
+        not:
+          uniqueConstraintExists:
+            tableName: driver_license_assignment
+            constraintName: uq_driver_license_assignment
+            schemaName: vozni_park
       changes:
         - addUniqueConstraint:
             tableName: driver_license_assignment
@@ -79,6 +131,13 @@ databaseChangeLog:
   - changeSet:
       id: 205-unique-travel-order-work-order-number
       author: nemanja
+      preConditions:
+        onFail: MARK_RAN
+        not:
+          uniqueConstraintExists:
+            tableName: travel_order
+            constraintName: uq_travel_order_work_order_number
+            schemaName: vozni_park
       changes:
         - addUniqueConstraint:
             tableName: travel_order
@@ -88,6 +147,13 @@ databaseChangeLog:
   - changeSet:
       id: 206-unique-travel-order-location-number
       author: nemanja
+      preConditions:
+        onFail: MARK_RAN
+        not:
+          uniqueConstraintExists:
+            tableName: travel_order
+            constraintName: uq_travel_order_location_number
+            schemaName: vozni_park
       changes:
         - addUniqueConstraint:
             tableName: travel_order
@@ -97,6 +163,13 @@ databaseChangeLog:
   - changeSet:
       id: 207-unique-session-token
       author: nemanja
+      preConditions:
+        onFail: MARK_RAN
+        not:
+          uniqueConstraintExists:
+            tableName: user_session
+            constraintName: uq_user_session_token
+            schemaName: vozni_park
       changes:
         - addUniqueConstraint:
             tableName: user_session
@@ -108,6 +181,13 @@ databaseChangeLog:
   - changeSet:
       id: 301-fk-vehicle-model-brand
       author: nemanja
+      preConditions:
+        onFail: MARK_RAN
+        not:
+          foreignKeyConstraintExists:
+            foreignKeyName: fk_vehicle_model_brand
+            foreignKeyTableName: vehicle_model
+            schemaName: vozni_park
       changes:
         - addForeignKeyConstraint:
             baseTableName: vehicle_model
@@ -119,6 +199,13 @@ databaseChangeLog:
   - changeSet:
       id: 302-fk-vehicle-fuel-type
       author: nemanja
+      preConditions:
+        onFail: MARK_RAN
+        not:
+          foreignKeyConstraintExists:
+            foreignKeyName: fk_vehicle_fuel_type
+            foreignKeyTableName: vehicle
+            schemaName: vozni_park
       changes:
         - addForeignKeyConstraint:
             baseTableName: vehicle
@@ -130,6 +217,13 @@ databaseChangeLog:
   - changeSet:
       id: 303-fk-vehicle-registration
       author: nemanja
+      preConditions:
+        onFail: MARK_RAN
+        not:
+          foreignKeyConstraintExists:
+            foreignKeyName: fk_vehicle_registration
+            foreignKeyTableName: vehicle
+            schemaName: vozni_park
       changes:
         - addForeignKeyConstraint:
             baseTableName: vehicle
@@ -141,6 +235,13 @@ databaseChangeLog:
   - changeSet:
       id: 304-fk-vehicle-first-aid-kit
       author: nemanja
+      preConditions:
+        onFail: MARK_RAN
+        not:
+          foreignKeyConstraintExists:
+            foreignKeyName: fk_vehicle_first_aid_kit
+            foreignKeyTableName: vehicle
+            schemaName: vozni_park
       changes:
         - addForeignKeyConstraint:
             baseTableName: vehicle
@@ -152,6 +253,13 @@ databaseChangeLog:
   - changeSet:
       id: 305-fk-vehicle-vehicle-model
       author: nemanja
+      preConditions:
+        onFail: MARK_RAN
+        not:
+          foreignKeyConstraintExists:
+            foreignKeyName: fk_vehicle_vehicle_model
+            foreignKeyTableName: vehicle
+            schemaName: vozni_park
       changes:
         - addForeignKeyConstraint:
             baseTableName: vehicle
@@ -163,6 +271,13 @@ databaseChangeLog:
   - changeSet:
       id: 306-fk-vehicle-location-vehicle
       author: nemanja
+      preConditions:
+        onFail: MARK_RAN
+        not:
+          foreignKeyConstraintExists:
+            foreignKeyName: fk_vehicle_location_vehicle
+            foreignKeyTableName: vehicle_location
+            schemaName: vozni_park
       changes:
         - addForeignKeyConstraint:
             baseTableName: vehicle_location
@@ -174,6 +289,13 @@ databaseChangeLog:
   - changeSet:
       id: 307-fk-vehicle-location-location-unit
       author: nemanja
+      preConditions:
+        onFail: MARK_RAN
+        not:
+          foreignKeyConstraintExists:
+            foreignKeyName: fk_vehicle_location_location_unit
+            foreignKeyTableName: vehicle_location
+            schemaName: vozni_park
       changes:
         - addForeignKeyConstraint:
             baseTableName: vehicle_location
@@ -185,6 +307,13 @@ databaseChangeLog:
   - changeSet:
       id: 308-fk-driver-location-driver
       author: nemanja
+      preConditions:
+        onFail: MARK_RAN
+        not:
+          foreignKeyConstraintExists:
+            foreignKeyName: fk_driver_location_driver
+            foreignKeyTableName: driver_location
+            schemaName: vozni_park
       changes:
         - addForeignKeyConstraint:
             baseTableName: driver_location
@@ -196,6 +325,13 @@ databaseChangeLog:
   - changeSet:
       id: 309-fk-driver-location-location-unit
       author: nemanja
+      preConditions:
+        onFail: MARK_RAN
+        not:
+          foreignKeyConstraintExists:
+            foreignKeyName: fk_driver_location_location_unit
+            foreignKeyTableName: driver_location
+            schemaName: vozni_park
       changes:
         - addForeignKeyConstraint:
             baseTableName: driver_location
@@ -207,6 +343,13 @@ databaseChangeLog:
   - changeSet:
       id: 310-fk-driver-license-assignment-driver
       author: nemanja
+      preConditions:
+        onFail: MARK_RAN
+        not:
+          foreignKeyConstraintExists:
+            foreignKeyName: fk_dla_driver
+            foreignKeyTableName: driver_license_assignment
+            schemaName: vozni_park
       changes:
         - addForeignKeyConstraint:
             baseTableName: driver_license_assignment
@@ -218,6 +361,13 @@ databaseChangeLog:
   - changeSet:
       id: 311-fk-driver-license-assignment-license
       author: nemanja
+      preConditions:
+        onFail: MARK_RAN
+        not:
+          foreignKeyConstraintExists:
+            foreignKeyName: fk_dla_drivers_license
+            foreignKeyTableName: driver_license_assignment
+            schemaName: vozni_park
       changes:
         - addForeignKeyConstraint:
             baseTableName: driver_license_assignment
@@ -229,6 +379,13 @@ databaseChangeLog:
   - changeSet:
       id: 312-fk-travel-order-location-unit
       author: nemanja
+      preConditions:
+        onFail: MARK_RAN
+        not:
+          foreignKeyConstraintExists:
+            foreignKeyName: fk_travel_order_location_unit
+            foreignKeyTableName: travel_order
+            schemaName: vozni_park
       changes:
         - addForeignKeyConstraint:
             baseTableName: travel_order
@@ -240,6 +397,13 @@ databaseChangeLog:
   - changeSet:
       id: 313-fk-travel-order-counter-location-unit
       author: nemanja
+      preConditions:
+        onFail: MARK_RAN
+        not:
+          foreignKeyConstraintExists:
+            foreignKeyName: fk_travel_order_counter_location_unit
+            foreignKeyTableName: travel_order_counter
+            schemaName: vozni_park
       changes:
         - addForeignKeyConstraint:
             baseTableName: travel_order_counter
@@ -251,6 +415,13 @@ databaseChangeLog:
   - changeSet:
       id: 314-fk-travel-order-created-by-user
       author: nemanja
+      preConditions:
+        onFail: MARK_RAN
+        not:
+          foreignKeyConstraintExists:
+            foreignKeyName: fk_travel_order_created_by_user
+            foreignKeyTableName: travel_order
+            schemaName: vozni_park
       changes:
         - addForeignKeyConstraint:
             baseTableName: travel_order
@@ -262,6 +433,13 @@ databaseChangeLog:
   - changeSet:
       id: 315-fk-driver-travel-order-driver
       author: nemanja
+      preConditions:
+        onFail: MARK_RAN
+        not:
+          foreignKeyConstraintExists:
+            foreignKeyName: fk_driver_travel_order_driver
+            foreignKeyTableName: driver_travel_order
+            schemaName: vozni_park
       changes:
         - addForeignKeyConstraint:
             baseTableName: driver_travel_order
@@ -273,6 +451,13 @@ databaseChangeLog:
   - changeSet:
       id: 316-fk-driver-travel-order-travel-order
       author: nemanja
+      preConditions:
+        onFail: MARK_RAN
+        not:
+          foreignKeyConstraintExists:
+            foreignKeyName: fk_driver_travel_order_travel_order
+            foreignKeyTableName: driver_travel_order
+            schemaName: vozni_park
       changes:
         - addForeignKeyConstraint:
             baseTableName: driver_travel_order
@@ -284,6 +469,13 @@ databaseChangeLog:
   - changeSet:
       id: 317-fk-travel-order-vehicle-vehicle
       author: nemanja
+      preConditions:
+        onFail: MARK_RAN
+        not:
+          foreignKeyConstraintExists:
+            foreignKeyName: fk_travel_order_vehicle_vehicle
+            foreignKeyTableName: travel_order_vehicle
+            schemaName: vozni_park
       changes:
         - addForeignKeyConstraint:
             baseTableName: travel_order_vehicle
@@ -295,6 +487,13 @@ databaseChangeLog:
   - changeSet:
       id: 318-fk-travel-order-vehicle-travel-order
       author: nemanja
+      preConditions:
+        onFail: MARK_RAN
+        not:
+          foreignKeyConstraintExists:
+            foreignKeyName: fk_travel_order_vehicle_travel_order
+            foreignKeyTableName: travel_order_vehicle
+            schemaName: vozni_park
       changes:
         - addForeignKeyConstraint:
             baseTableName: travel_order_vehicle
@@ -306,6 +505,13 @@ databaseChangeLog:
   - changeSet:
       id: 319-fk-app-user-role
       author: nemanja
+      preConditions:
+        onFail: MARK_RAN
+        not:
+          foreignKeyConstraintExists:
+            foreignKeyName: fk_app_user_role
+            foreignKeyTableName: app_user
+            schemaName: vozni_park
       changes:
         - addForeignKeyConstraint:
             baseTableName: app_user
@@ -317,6 +523,13 @@ databaseChangeLog:
   - changeSet:
       id: 320-fk-user-location-user
       author: nemanja
+      preConditions:
+        onFail: MARK_RAN
+        not:
+          foreignKeyConstraintExists:
+            foreignKeyName: fk_user_location_user
+            foreignKeyTableName: user_location
+            schemaName: vozni_park
       changes:
         - addForeignKeyConstraint:
             baseTableName: user_location
@@ -328,6 +541,13 @@ databaseChangeLog:
   - changeSet:
       id: 321-fk-user-location-location
       author: nemanja
+      preConditions:
+        onFail: MARK_RAN
+        not:
+          foreignKeyConstraintExists:
+            foreignKeyName: fk_user_location_location
+            foreignKeyTableName: user_location
+            schemaName: vozni_park
       changes:
         - addForeignKeyConstraint:
             baseTableName: user_location
@@ -339,6 +559,13 @@ databaseChangeLog:
   - changeSet:
       id: 322-fk-user-session-user
       author: nemanja
+      preConditions:
+        onFail: MARK_RAN
+        not:
+          foreignKeyConstraintExists:
+            foreignKeyName: fk_user_session_user
+            foreignKeyTableName: user_session
+            schemaName: vozni_park
       changes:
         - addForeignKeyConstraint:
             baseTableName: user_session

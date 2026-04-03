@@ -1,0 +1,524 @@
+databaseChangeLog:
+
+  # =============================================================
+  # 005-zaposleni-schema.yaml
+  # ZAPOSLENI (Employee) entity + Registration tokens
+  # Part of Master Thesis — Database Schema Upgrade
+  # =============================================================
+
+  # --- 601: Create ZAPOSLENI table ---
+  - changeSet:
+      id: 601-create-zaposleni-table
+      author: nemanja
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: zaposleni
+      changes:
+        - createTable:
+            tableName: zaposleni
+            columns:
+              - column:
+                  name: ID_ZAPOSLENI
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: SAP_NUMBER
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: FULL_NAME
+                  type: VARCHAR(60)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: EMAIL
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: PHONE
+                  type: VARCHAR(20)
+              - column:
+                  name: DEPARTMENT
+                  type: VARCHAR(50)
+              - column:
+                  name: POSITION
+                  type: VARCHAR(50)
+              - column:
+                  name: IS_ACTIVE
+                  type: TINYINT
+                  defaultValueNumeric: 1
+                  constraints:
+                    nullable: false
+
+  # --- 602: Create indexes on ZAPOSLENI ---
+  - changeSet:
+      id: 602-create-zaposleni-indexes
+      author: nemanja
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: zaposleni
+      changes:
+        - createIndex:
+            tableName: zaposleni
+            indexName: idx_zaposleni_email
+            columns:
+              - column:
+                  name: EMAIL
+        - createIndex:
+            tableName: zaposleni
+            indexName: idx_zaposleni_sap_number
+            columns:
+              - column:
+                  name: SAP_NUMBER
+        - createIndex:
+            tableName: zaposleni
+            indexName: idx_zaposleni_is_active
+            columns:
+              - column:
+                  name: IS_ACTIVE
+
+  # --- 603: Create REGISTRATION_TOKENS table ---
+  - changeSet:
+      id: 603-create-registration-tokens-table
+      author: nemanja
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: registration_tokens
+      changes:
+        - createTable:
+            tableName: registration_tokens
+            columns:
+              - column:
+                  name: ID_REGISTRATION_TOKEN
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: TOKEN
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: EMAIL
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: ZAPOSLENI_ID
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: CREATED_AT
+                  type: DATETIME
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: EXPIRES_AT
+                  type: DATETIME
+                  constraints:
+                    nullable: false
+              - column:
+                  name: USED
+                  type: TINYINT
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+
+  # --- 604: Add FK from REGISTRATION_TOKENS to ZAPOSLENI ---
+  - changeSet:
+      id: 604-add-fk-registration-tokens-zaposleni
+      author: nemanja
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: registration_tokens
+        - tableExists:
+            tableName: zaposleni
+      changes:
+        - addForeignKeyConstraint:
+            baseTableName: registration_tokens
+            baseColumnNames: ZAPOSLENI_ID
+            referencedTableName: zaposleni
+            referencedColumnNames: ID_ZAPOSLENI
+            constraintName: fk_registration_tokens_zaposleni
+            onDelete: CASCADE
+
+  # --- 605: Add index on REGISTRATION_TOKENS ---
+  - changeSet:
+      id: 605-create-registration-tokens-indexes
+      author: nemanja
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: registration_tokens
+      changes:
+        - createIndex:
+            tableName: registration_tokens
+            indexName: idx_reg_tokens_email
+            columns:
+              - column:
+                  name: EMAIL
+        - createIndex:
+            tableName: registration_tokens
+            indexName: idx_reg_tokens_expires_at
+            columns:
+              - column:
+                  name: EXPIRES_AT
+        - createIndex:
+            tableName: registration_tokens
+            indexName: idx_reg_tokens_used
+            columns:
+              - column:
+                  name: USED
+
+  # --- 606: Add ZAPOSLENI_ID column to DRIVER ---
+  - changeSet:
+      id: 606-add-zaposleni-id-to-driver
+      author: nemanja
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: driver
+        - not:
+            - columnExists:
+                tableName: driver
+                columnName: ZAPOSLENI_ID
+      changes:
+        - addColumn:
+            tableName: driver
+            columns:
+              - column:
+                  name: ZAPOSLENI_ID
+                  type: BIGINT
+                  constraints:
+                    nullable: true
+
+  # --- 607: Add FK from DRIVER.ZAPOSLENI_ID to ZAPOSLENI ---
+  - changeSet:
+      id: 607-add-fk-driver-zaposleni
+      author: nemanja
+      preConditions:
+        - onFail: MARK_RAN
+        - columnExists:
+            tableName: driver
+            columnName: ZAPOSLENI_ID
+        - tableExists:
+            tableName: zaposleni
+      changes:
+        - addForeignKeyConstraint:
+            baseTableName: driver
+            baseColumnNames: ZAPOSLENI_ID
+            referencedTableName: zaposleni
+            referencedColumnNames: ID_ZAPOSLENI
+            constraintName: fk_driver_zaposleni
+            onDelete: SET NULL
+
+  # --- 608: Add ZAPOSLENI_ID column to APP_USER ---
+  - changeSet:
+      id: 608-add-zaposleni-id-to-app-user
+      author: nemanja
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: app_user
+        - not:
+            - columnExists:
+                tableName: app_user
+                columnName: ZAPOSLENI_ID
+      changes:
+        - addColumn:
+            tableName: app_user
+            columns:
+              - column:
+                  name: ZAPOSLENI_ID
+                  type: BIGINT
+                  constraints:
+                    nullable: true
+
+  # --- 609: Add FK from APP_USER.ZAPOSLENI_ID to ZAPOSLENI ---
+  - changeSet:
+      id: 609-add-fk-app-user-zaposleni
+      author: nemanja
+      preConditions:
+        - onFail: MARK_RAN
+        - columnExists:
+            tableName: app_user
+            columnName: ZAPOSLENI_ID
+        - tableExists:
+            tableName: zaposleni
+      changes:
+        - addForeignKeyConstraint:
+            baseTableName: app_user
+            baseColumnNames: ZAPOSLENI_ID
+            referencedTableName: zaposleni
+            referencedColumnNames: ID_ZAPOSLENI
+            constraintName: fk_app_user_zaposleni
+            onDelete: SET NULL
+
+  # =============================================================
+  # SEED DATA — Initial employee records
+  # Creates ZAPOSLENI entries based on existing system data
+  # =============================================================
+
+  # --- 610: Seed ZAPOSLENI — employees ---
+  - changeSet:
+      id: 610-seed-zaposleni-employees
+      author: nemanja
+      comment: >
+        Seed employee records. These represent the company workforce.
+        The Clojure registration service checks EMAIL against this table.
+        SAP numbers and names match existing DRIVER/APP_USER records
+        where applicable, to support future linking.
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: zaposleni
+        - sqlCheck:
+            expectedResult: 0
+            sql: SELECT COUNT(*) FROM zaposleni
+      changes:
+        - insert:
+            tableName: zaposleni
+            columns:
+              - column:
+                  name: ID_ZAPOSLENI
+                  valueNumeric: 1
+              - column:
+                  name: SAP_NUMBER
+                  valueNumeric: 10001
+              - column:
+                  name: FULL_NAME
+                  value: "Petar Petrovic"
+              - column:
+                  name: EMAIL
+                  value: "petar.petrovic@voznipark.rs"
+              - column:
+                  name: PHONE
+                  value: "0641234567"
+              - column:
+                  name: DEPARTMENT
+                  value: "Transport"
+              - column:
+                  name: POSITION
+                  value: "Vozac"
+              - column:
+                  name: IS_ACTIVE
+                  valueNumeric: 1
+        - insert:
+            tableName: zaposleni
+            columns:
+              - column:
+                  name: ID_ZAPOSLENI
+                  valueNumeric: 2
+              - column:
+                  name: SAP_NUMBER
+                  valueNumeric: 10002
+              - column:
+                  name: FULL_NAME
+                  value: "Marko Markovic"
+              - column:
+                  name: EMAIL
+                  value: "marko.markovic@voznipark.rs"
+              - column:
+                  name: PHONE
+                  value: "0659876543"
+              - column:
+                  name: DEPARTMENT
+                  value: "Transport"
+              - column:
+                  name: POSITION
+                  value: "Vozac"
+              - column:
+                  name: IS_ACTIVE
+                  valueNumeric: 1
+        - insert:
+            tableName: zaposleni
+            columns:
+              - column:
+                  name: ID_ZAPOSLENI
+                  valueNumeric: 3
+              - column:
+                  name: SAP_NUMBER
+                  valueNumeric: 10003
+              - column:
+                  name: FULL_NAME
+                  value: "Ana Jovanovic"
+              - column:
+                  name: EMAIL
+                  value: "ana.jovanovic@voznipark.rs"
+              - column:
+                  name: PHONE
+                  value: "0621112233"
+              - column:
+                  name: DEPARTMENT
+                  value: "Administracija"
+              - column:
+                  name: POSITION
+                  value: "Administrator sistema"
+              - column:
+                  name: IS_ACTIVE
+                  valueNumeric: 1
+        - insert:
+            tableName: zaposleni
+            columns:
+              - column:
+                  name: ID_ZAPOSLENI
+                  valueNumeric: 4
+              - column:
+                  name: SAP_NUMBER
+                  valueNumeric: 10004
+              - column:
+                  name: FULL_NAME
+                  value: "Jelena Nikolic"
+              - column:
+                  name: EMAIL
+                  value: "jelena.nikolic@voznipark.rs"
+              - column:
+                  name: PHONE
+                  value: "0634445566"
+              - column:
+                  name: DEPARTMENT
+                  value: "Logistika"
+              - column:
+                  name: POSITION
+                  value: "Koordinator logistike"
+              - column:
+                  name: IS_ACTIVE
+                  valueNumeric: 1
+        - insert:
+            tableName: zaposleni
+            columns:
+              - column:
+                  name: ID_ZAPOSLENI
+                  valueNumeric: 5
+              - column:
+                  name: SAP_NUMBER
+                  valueNumeric: 10005
+              - column:
+                  name: FULL_NAME
+                  value: "Nikola Stojanovic"
+              - column:
+                  name: EMAIL
+                  value: "nikola.stojanovic@voznipark.rs"
+              - column:
+                  name: DEPARTMENT
+                  value: "Transport"
+              - column:
+                  name: POSITION
+                  value: "Vozac"
+              - column:
+                  name: IS_ACTIVE
+                  valueNumeric: 1
+
+  # --- 611: Link DRIVER records to ZAPOSLENI by SAP_NUMBER ---
+  - changeSet:
+      id: 611-link-driver-to-zaposleni
+      author: nemanja
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: driver
+        - tableExists:
+            tableName: zaposleni
+        - columnExists:
+            tableName: driver
+            columnName: ZAPOSLENI_ID
+      changes:
+        - sql:
+            sql: |
+              UPDATE driver d
+              JOIN zaposleni z ON d.sap_number = z.SAP_NUMBER
+              SET d.ZAPOSLENI_ID = z.ID_ZAPOSLENI
+              WHERE d.ZAPOSLENI_ID IS NULL;
+  # --- 612: Create OTP_CODES table ---
+  - changeSet:
+      id: 612-create-otp-codes-table
+      author: nemanja
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: otp_codes
+      changes:
+        - createTable:
+            tableName: otp_codes
+            columns:
+              - column:
+                  name: ID_OTP
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: EMAIL
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: CODE
+                  type: CHAR(6)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: EXPIRES_AT
+                  type: DATETIME
+                  constraints:
+                    nullable: false
+              - column:
+                  name: USED
+                  type: TINYINT
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: CREATED_AT
+                  type: DATETIME
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+
+  # --- 613: Create indexes on OTP_CODES ---
+  - changeSet:
+      id: 613-create-otp-codes-indexes
+      author: nemanja
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: otp_codes
+      changes:
+        - createIndex:
+            tableName: otp_codes
+            indexName: idx_otp_codes_email
+            columns:
+              - column:
+                  name: EMAIL
+        - createIndex:
+            tableName: otp_codes
+            indexName: idx_otp_codes_expires_at
+            columns:
+              - column:
+                  name: EXPIRES_AT
+        - createIndex:
+            tableName: otp_codes
+            indexName: idx_otp_codes_used
+            columns:
+              - column:
+                  name: USED

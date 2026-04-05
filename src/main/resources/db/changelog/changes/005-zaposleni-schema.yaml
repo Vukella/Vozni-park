@@ -522,3 +522,25 @@ databaseChangeLog:
             columns:
               - column:
                   name: USED
+  # --- 614: Add SKIP_NEXT_OTP column to APP_USER ---
+  - changeSet:
+      id: 614-add-skip-next-otp-to-app-user
+      author: nemanja
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: app_user
+        - not:
+            - columnExists:
+                tableName: app_user
+                columnName: SKIP_NEXT_OTP
+      changes:
+        - addColumn:
+            tableName: app_user
+            columns:
+              - column:
+                  name: SKIP_NEXT_OTP
+                  type: TINYINT
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false

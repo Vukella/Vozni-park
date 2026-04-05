@@ -48,6 +48,9 @@ public class AppUser {
     @JoinColumn(name = "role_id", insertable = false, updatable = false)
     private Role role;
 
+    @Column(name = "skip_next_otp")
+    private Integer skipNextOtp = 0;
+
     @OneToMany(mappedBy = "user")
     private List<UserLocation> userLocations;
 

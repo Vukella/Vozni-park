@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 
 @Entity
@@ -19,6 +20,8 @@ public class Vehicle {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_vehicle")
     private Long idVehicle;
+
+    // ── Existing columns ──────────────────────────────────────────────
 
     @Column(name = "sap_number")
     private Long sapNumber;
@@ -44,6 +47,7 @@ public class Vehicle {
     @Column(name = "tire_marking", length = 50)
     private String tireMarking;
 
+    /** Legacy column — serial number stored as plain value. Replaced by fire_extinguisher relationship. */
     @Column(name = "fire_extinguisher_serial_number")
     private Long fireExtinguisherSerialNumber;
 
@@ -53,7 +57,48 @@ public class Vehicle {
     @Column(name = "status_code")
     private Integer statusCode;
 
-    // Foreign Key columns (for insertable/updatable control)
+    // ── New physical columns (changeset 721) ──────────────────────────
+
+    @Column(name = "mass", precision = 10, scale = 2)
+    private BigDecimal mass;
+
+    @Column(name = "color", length = 20)
+    private String color;
+
+    @Column(name = "load_capacity")
+    private Integer loadCapacity;
+
+    @Column(name = "total_mass")
+    private Integer totalMass;
+
+    @Column(name = "number_of_seats")
+    private Integer numberOfSeats;
+
+    @Column(name = "first_registration_date")
+    private LocalDate firstRegistrationDate;
+
+    /**
+     * 1 = vehicle is on operational leasing.
+     */
+    @Column(name = "operational_leasing")
+    private Integer operationalLeasing = 0;
+
+    /**
+     * 1 = vehicle is permanently decommissioned and removed from all operational queries.
+     * This is a flag, not a status code — decommissioned vehicles do not appear
+     * in vehicle selection lists regardless of other conditions.
+     */
+    @Column(name = "decommissioned")
+    private Integer decommissioned = 0;
+
+    @Column(name = "decommission_date")
+    private LocalDate decommissionDate;
+
+    @Column(name = "note", length = 300)
+    private String note;
+
+    // ── FK columns for new relationships (insertable=false, updatable=false) ─
+
     @Column(name = "registration_id", insertable = false, updatable = false)
     private Long registrationId;
 
@@ -66,7 +111,26 @@ public class Vehicle {
     @Column(name = "vehicle_model_id", insertable = false, updatable = false)
     private Long vehicleModelId;
 
-    // Relationships
+    @Column(name = "vehicle_type_id", insertable = false, updatable = false)
+    private Long vehicleTypeId;
+
+    @Column(name = "vehicle_subtype_id", insertable = false, updatable = false)
+    private Long vehicleSubtypeId;
+
+    @Column(name = "tachograph_device_id", insertable = false, updatable = false)
+    private Long tachographDeviceId;
+
+    @Column(name = "casco_insurance_id", insertable = false, updatable = false)
+    private Long cascoInsuranceId;
+
+    @Column(name = "fire_extinguisher_id", insertable = false, updatable = false)
+    private Long fireExtinguisherId;
+
+    @Column(name = "nis_card_id", insertable = false, updatable = false)
+    private Long nisCardId;
+
+    // ── Existing relationships ─────────────────────────────────────────
+
     @OneToOne
     @JoinColumn(name = "registration_id")
     private Registration registration;
@@ -88,4 +152,25 @@ public class Vehicle {
 
     @OneToMany(mappedBy = "vehicle")
     private List<TravelOrderVehicle> travelOrderVehicles;
+
+    // ── New relationships (changeset 722) ─────────────────────────────
+
+    @OneToOne
+    @JoinColumn(name = "casco_insurance_id")
+    private CascoInsurance cascoInsurance;
+
+    @OneToOne
+    @JoinColumn(name = "tachograph_device_id")
+    private TachographDevice tachographDevice;
+
+    @OneToOne
+    @JoinColumn(name = "fire_extinguisher_id")
+    private FireExtinguisher fireExtinguisher;
+
+    @OneToOne
+    @JoinColumn(name = "nis_card_id")
+    private NisCard nisCard;
+
+    @OneToMany(mappedBy = "vehicle")
+    private List<VehicleFault> vehicleFaults;
 }

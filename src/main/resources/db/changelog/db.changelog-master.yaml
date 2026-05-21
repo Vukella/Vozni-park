@@ -9,3 +9,5 @@ databaseChangeLog:
       file: db/changelog/changes/004-seed-reference.yaml
   - include:
       file: db/changelog/changes/005-zaposleni-schema.yaml
+  - include:
+      file: db/changelog/changes/006-fleet-expansion.yaml

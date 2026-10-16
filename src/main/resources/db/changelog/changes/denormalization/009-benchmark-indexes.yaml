@@ -1,0 +1,69 @@
+databaseChangeLog:
+
+  # ── Benchmark performance indexes ─────────────────────────────────────────
+  # These indexes support the LIKE 'BENCH-%' filter used in all benchmark queries
+  # and the GROUP BY / JOIN patterns that appear in the normalized variants.
+  #
+  # Added as a separate changeset file so they are clearly labelled as a
+  # performance experiment — not part of the core production schema.
+  #
+  # Expected impact per experiment:
+  #   Experiment A (normalized): idx_travel_order_work_order enables range scan
+  #                              instead of full table scan on travel_order.
+  #   Experiment B (normalized): idx_tov_vehicle_id accelerates the GROUP BY JOIN
+  #                              between travel_order_vehicle and vehicle.
+  #   Experiment C (normalized): idx_travel_order_work_order eliminates filesort
+  #                              on the 50k/1M row travel_order scan.
+  #   Experiment C (denormalized): idx_snapshot_work_order accelerates the
+  #                                single-table scan on the snapshot table.
+
+  - changeSet:
+      id: 901-idx-travel-order-work-order
+      author: system
+      preConditions:
+        onFail: MARK_RAN
+        not:
+          indexExists:
+            tableName: travel_order
+            indexName: idx_travel_order_work_order
+      changes:
+        - createIndex:
+            indexName: idx_travel_order_work_order
+            tableName: travel_order
+            columns:
+              - column:
+                  name: work_order_number
+
+  - changeSet:
+      id: 902-idx-tov-vehicle-id
+      author: system
+      preConditions:
+        onFail: MARK_RAN
+        not:
+          indexExists:
+            tableName: travel_order_vehicle
+            indexName: idx_tov_vehicle_id
+      changes:
+        - createIndex:
+            indexName: idx_tov_vehicle_id
+            tableName: travel_order_vehicle
+            columns:
+              - column:
+                  name: vehicle_id
+
+  - changeSet:
+      id: 903-idx-snapshot-work-order
+      author: system
+      preConditions:
+        onFail: MARK_RAN
+        not:
+          indexExists:
+            tableName: travel_order_report_snapshot
+            indexName: idx_snapshot_work_order
+      changes:
+        - createIndex:
+            indexName: idx_snapshot_work_order
+            tableName: travel_order_report_snapshot
+            columns:
+              - column:
+                  name: work_order_number

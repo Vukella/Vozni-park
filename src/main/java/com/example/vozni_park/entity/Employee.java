@@ -6,7 +6,7 @@ import lombok.Setter;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "zaposleni")
+@Table(name = "employee")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -14,7 +14,7 @@ public class Employee {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "ID_ZAPOSLENI")
+    @Column(name = "ID_EMPLOYEE")
     private Long idEmployee;
 
     @Column(name = "SAP_NUMBER", nullable = false, unique = true)

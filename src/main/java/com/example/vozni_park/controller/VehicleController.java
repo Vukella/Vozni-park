@@ -103,19 +103,6 @@ public class VehicleController {
         }
     }
 
-    @PatchMapping("/{id}/status")
-    @Operation(summary = "Update vehicle status")
-    public ResponseEntity<?> updateVehicleStatus(
-            @PathVariable Long id,
-            @RequestParam String status,
-            @RequestParam(required = false) Integer statusCode) {
-        try {
-            VehicleResponseDTO updated = vehicleService.updateVehicleStatus(id, status, statusCode);
-            return ResponseEntity.ok(updated);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
-    }
     @GetMapping("/available")
     @Operation(summary = "Get available vehicles")
     public ResponseEntity<List<VehicleResponseDTO>> getAvailableVehicles() {

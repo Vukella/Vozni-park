@@ -102,20 +102,6 @@ public class DriverController {
         }
     }
 
-    @PatchMapping("/{id}/status")
-    @Operation(summary = "Update driver status")
-    public ResponseEntity<?> updateDriverStatus(
-            @PathVariable Long id,
-            @RequestParam String status,
-            @RequestParam(required = false) Integer statusCode) {
-        try {
-            DriverResponseDTO updated = driverService.updateDriverStatus(id, status, statusCode);
-            return ResponseEntity.ok(updated);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
-    }
-
     @DeleteMapping("/{id}")
     @Operation(summary = "Delete driver")
     public ResponseEntity<?> deleteDriver(@PathVariable Long id) {

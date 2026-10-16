@@ -37,7 +37,7 @@ public class Driver {
     @Column(name = "license_revoked", nullable = false)
     private Integer licenseRevoked = 0;
 
-    @Column(name = "ZAPOSLENI_ID", insertable = false, updatable = false)
+    @Column(name = "EMPLOYEE_ID", insertable = false, updatable = false)
     private Long zaposleniId;
 
     @Column(name = "medical_certificate_id", insertable = false, updatable = false)
@@ -49,7 +49,7 @@ public class Driver {
     // ── Relationships ─────────────────────────────────────────────────
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "ZAPOSLENI_ID")
+    @JoinColumn(name = "EMPLOYEE_ID")
     private Employee employee;
 
     @OneToOne

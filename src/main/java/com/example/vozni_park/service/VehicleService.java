@@ -155,6 +155,9 @@ public class VehicleService {
         Vehicle vehicle = vehicleMapper.toEntity(vehicleDTO);
         setRelatedEntities(vehicle, vehicleDTO);
 
+        // Experiment A: populate denormalized display name
+        vehicle.setVehicleDisplayName(buildDisplayName(vehicle));
+
         Vehicle saved = vehicleRepository.save(vehicle);
 
         // Set initial status after save so we have the ID
@@ -186,6 +189,10 @@ public class VehicleService {
 
         vehicleMapper.updateEntity(vehicle, vehicleDTO);
         setRelatedEntities(vehicle, vehicleDTO);
+
+        // Experiment A: recalculate display name after update (brand/model/registration may have changed)
+        vehicle.setVehicleDisplayName(buildDisplayName(vehicle));
+
         vehicleRepository.save(vehicle);
 
         // Document changes may have changed status
@@ -232,6 +239,8 @@ public class VehicleService {
         return vehicleRepository.existsById(id);
     }
 
+    // ── Private helpers ───────────────────────────────────────────────
+
     private void setRelatedEntities(Vehicle vehicle, VehicleRequestDTO dto) {
         if (dto.getRegistrationId() != null) {
             Registration registration = registrationRepository.findById(dto.getRegistrationId())
@@ -250,5 +259,30 @@ public class VehicleService {
         VehicleModel vehicleModel = vehicleModelRepository.findById(dto.getVehicleModelId())
                 .orElseThrow(() -> new EntityNotFoundException("VehicleModel", dto.getVehicleModelId()));
         vehicle.setVehicleModel(vehicleModel);
+    }
+
+    /**
+     * Builds the denormalized display name for a vehicle.
+     * Format: "Brand Model (REG-NUMBER)" — e.g. "Škoda Octavia (BG-1234-AA)".
+     * Registration suffix is omitted if the vehicle has no registration assigned.
+     * Called by createVehicle() and updateVehicle() to keep vehicle_display_name in sync.
+     */
+    private String buildDisplayName(Vehicle vehicle) {
+        StringBuilder sb = new StringBuilder();
+
+        if (vehicle.getVehicleModel() != null) {
+            if (vehicle.getVehicleModel().getBrand() != null) {
+                sb.append(vehicle.getVehicleModel().getBrand().getName()).append(" ");
+            }
+            sb.append(vehicle.getVehicleModel().getName());
+        }
+
+        if (vehicle.getRegistration() != null
+                && vehicle.getRegistration().getRegistrationNumber() != null
+                && !vehicle.getRegistration().getRegistrationNumber().isBlank()) {
+            sb.append(" (").append(vehicle.getRegistration().getRegistrationNumber()).append(")");
+        }
+
+        return sb.toString().trim();
     }
 }

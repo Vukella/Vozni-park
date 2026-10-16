@@ -134,4 +134,15 @@ public interface TravelOrderRepository extends JpaRepository<TravelOrder, Long> 
             "AND t.dateTo < :today " +
             "AND t.endingMileage IS NULL")
     List<TravelOrder> findExpiredActiveTravelOrders(@Param("today") LocalDate today);
+    @Query(value = """
+    SELECT
+        COALESCE(SUM(fr.liters), 0),
+        COALESCE(SUM(fr.total_amount), 0)
+    FROM fuel_receipt fr
+    INNER JOIN travel_order_fuel_receipt tofr
+        ON tofr.fuel_receipt_id = fr.id_fuel_receipt
+    WHERE tofr.travel_order_id = :travelOrderId
+    """, nativeQuery = true)
+    Object[] findFuelTotalsForTravelOrder(@Param("travelOrderId") Long travelOrderId);
+
 }

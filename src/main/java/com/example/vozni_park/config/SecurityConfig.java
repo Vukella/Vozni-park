@@ -60,6 +60,7 @@ public class SecurityConfig {
                         // ── Public ────────────────────────────────────────────────
                         .requestMatchers("/error").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/benchmark/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .requestMatchers("/v3/api-docs/**", "/api-docs/**").permitAll()
 

@@ -97,6 +97,25 @@ public class Vehicle {
     @Column(name = "note", length = 300)
     private String note;
 
+    // ── Denormalization columns (changeset 801, 802) ──────────────────
+
+    /**
+     * Denormalized display string: "Brand Model (REG-NUMBER)".
+     * Maintained by VehicleService.buildDisplayName() on every create and update.
+     * Used by Experiment A (value modification benchmark).
+     */
+    @Column(name = "vehicle_display_name", length = 150)
+    private String vehicleDisplayName;
+
+    /**
+     * Denormalized aggregate: sum of (ending_mileage - starting_mileage) across all
+     * COMPLETED travel orders for this vehicle.
+     * Incremented by TravelOrderService.completeTravelOrder() on each close.
+     * Used by Experiment B (derived values benchmark).
+     */
+    @Column(name = "total_distance_traveled")
+    private Long totalDistanceTraveled = 0L;
+
     // ── FK columns for new relationships (insertable=false, updatable=false) ─
 
     @Column(name = "registration_id", insertable = false, updatable = false)

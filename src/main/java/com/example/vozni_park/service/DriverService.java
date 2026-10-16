@@ -3,13 +3,20 @@ package com.example.vozni_park.service;
 import com.example.vozni_park.dto.request.DriverRequestDTO;
 import com.example.vozni_park.dto.response.DriverResponseDTO;
 import com.example.vozni_park.entity.Driver;
+import com.example.vozni_park.entity.LicenseRevocation;
+import com.example.vozni_park.exception.BusinessRuleViolationException;
+import com.example.vozni_park.exception.DuplicateEntityException;
+import com.example.vozni_park.exception.EntityNotFoundException;
+import com.example.vozni_park.exception.LocationAccessDeniedException;
 import com.example.vozni_park.mapper.DriverMapper;
 import com.example.vozni_park.repository.DriverRepository;
+import com.example.vozni_park.repository.LicenseRevocationRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -22,253 +29,237 @@ public class DriverService {
     private final DriverRepository driverRepository;
     private final DriverMapper driverMapper;
     private final LocationFilterService locationFilterService;
+    private final StatusCalculationService statusCalculationService;
+    private final LicenseRevocationRepository licenseRevocationRepository;
 
-    /**
-     * Get all drivers - automatically filtered by user's location(s)
-     */
     public List<DriverResponseDTO> getAllDrivers() {
         List<Driver> drivers;
-
         if (locationFilterService.isSuperAdmin()) {
-            // SUPER_ADMIN sees everything
-            log.debug("SUPER_ADMIN access - fetching all drivers");
             drivers = driverRepository.findAll();
         } else {
-            // LOCAL_ADMIN sees only their location(s)
             List<Long> locationIds = locationFilterService.getCurrentUserLocationIds();
-            log.debug("LOCAL_ADMIN access - fetching drivers for locations: {}", locationIds);
             drivers = driverRepository.findByLocationIds(locationIds);
         }
-
         return driverMapper.toResponseDTOList(drivers);
     }
 
-    /**
-     * Get driver by ID - validates location access
-     */
     public Optional<DriverResponseDTO> getDriverById(Long id) {
         Optional<Driver> driver = driverRepository.findById(id);
-
-        // If not SUPER_ADMIN, validate location access
         if (driver.isPresent() && !locationFilterService.isSuperAdmin()) {
             Driver d = driver.get();
             if (d.getDriverLocation() != null) {
-                Long driverLocationId = d.getDriverLocation().getLocationUnit().getIdLocationUnit();
-                if (!locationFilterService.hasAccessToLocation(driverLocationId)) {
-                    log.warn("User {} denied access to driver {} at location {}",
-                            locationFilterService.getCurrentUsername(), id, driverLocationId);
+                Long locationId = d.getDriverLocation().getLocationUnit().getIdLocationUnit();
+                if (!locationFilterService.hasAccessToLocation(locationId)) {
                     return Optional.empty();
                 }
             }
         }
-
         return driver.map(driverMapper::toResponseDTO);
     }
 
-    /**
-     * Get driver by SAP number - validates location access
-     */
     public Optional<DriverResponseDTO> getDriverBySapNumber(Long sapNumber) {
         Optional<Driver> driver = driverRepository.findBySapNumber(sapNumber);
-
-        // Validate location access
         if (driver.isPresent() && !locationFilterService.isSuperAdmin()) {
             Driver d = driver.get();
             if (d.getDriverLocation() != null) {
-                Long driverLocationId = d.getDriverLocation().getLocationUnit().getIdLocationUnit();
-                if (!locationFilterService.hasAccessToLocation(driverLocationId)) {
+                Long locationId = d.getDriverLocation().getLocationUnit().getIdLocationUnit();
+                if (!locationFilterService.hasAccessToLocation(locationId)) {
                     return Optional.empty();
                 }
             }
         }
-
         return driver.map(driverMapper::toResponseDTO);
     }
 
-    /**
-     * Get drivers by status - location filtered
-     */
     public List<DriverResponseDTO> getDriversByStatus(String status) {
         List<Driver> drivers;
-
         if (locationFilterService.isSuperAdmin()) {
             drivers = driverRepository.findByStatus(status);
         } else {
             List<Long> locationIds = locationFilterService.getCurrentUserLocationIds();
             drivers = driverRepository.findByLocationIdsAndStatus(locationIds, status);
         }
-
         return driverMapper.toResponseDTOList(drivers);
     }
 
-    /**
-     * Search drivers by name - location filtered
-     */
     public List<DriverResponseDTO> searchDriversByName(String name) {
         List<Driver> drivers;
-
         if (locationFilterService.isSuperAdmin()) {
             drivers = driverRepository.findByFullNameContainingIgnoreCase(name);
         } else {
-            // Use efficient query instead of stream filter
             List<Long> locationIds = locationFilterService.getCurrentUserLocationIds();
             drivers = driverRepository.findByLocationIdsAndNameContaining(locationIds, name);
         }
-
         return driverMapper.toResponseDTOList(drivers);
     }
 
-    /**
-     * Get drivers by location - validates location access
-     */
     public List<DriverResponseDTO> getDriversByLocation(Long locationId) {
-        // Validate location access
         if (!locationFilterService.isSuperAdmin()) {
             locationFilterService.validateLocationAccess(locationId);
         }
-
-        List<Driver> drivers = driverRepository.findByLocationId(locationId);
-        return driverMapper.toResponseDTOList(drivers);
+        return driverMapper.toResponseDTOList(driverRepository.findByLocationId(locationId));
     }
 
-    /**
-     * Get drivers without location - SUPER_ADMIN only
-     */
     public List<DriverResponseDTO> getDriversWithoutLocation() {
-        // Only SUPER_ADMIN can see unassigned drivers
         if (!locationFilterService.isSuperAdmin()) {
-            log.warn("LOCAL_ADMIN attempted to access unassigned drivers");
-            throw new SecurityException("Only SUPER_ADMIN can view drivers without location assignment");
+            throw new LocationAccessDeniedException("Only SUPER_ADMIN can view drivers without location assignment");
         }
-
-        List<Driver> drivers = driverRepository.findDriversWithoutLocation();
-        return driverMapper.toResponseDTOList(drivers);
+        return driverMapper.toResponseDTOList(driverRepository.findDriversWithoutLocation());
     }
 
-    /**
-     * Get available drivers (active and not on travel order) - location filtered
-     */
     public List<DriverResponseDTO> getAvailableDrivers() {
         List<Driver> drivers;
-
         if (locationFilterService.isSuperAdmin()) {
             drivers = driverRepository.findAvailableDrivers();
         } else {
             List<Long> locationIds = locationFilterService.getCurrentUserLocationIds();
             drivers = driverRepository.findAvailableDriversByLocationIds(locationIds);
         }
-
         return driverMapper.toResponseDTOList(drivers);
     }
 
-    /**
-     * Create new driver from DTO
-     */
     @Transactional
     public DriverResponseDTO createDriver(DriverRequestDTO driverDTO) {
-        // Validation: Check if SAP number already exists
         if (driverRepository.existsBySapNumber(driverDTO.getSapNumber())) {
-            throw new IllegalArgumentException("Driver with SAP number " + driverDTO.getSapNumber() + " already exists");
+            throw new DuplicateEntityException("Driver", "SAP number", driverDTO.getSapNumber());
         }
 
-        // Convert DTO to entity
         Driver driver = driverMapper.toEntity(driverDTO);
-
-        // Save and return DTO
+        driver.setLicenseRevoked(0);
         Driver saved = driverRepository.save(driver);
-        return driverMapper.toResponseDTO(saved);
+
+        statusCalculationService.recalculateAndSaveDriverStatus(saved.getIdDriver());
+
+        return driverMapper.toResponseDTO(driverRepository.findById(saved.getIdDriver()).orElseThrow());
     }
 
-    /**
-     * Update existing driver from DTO - validates location access
-     */
     @Transactional
     public DriverResponseDTO updateDriver(Long id, DriverRequestDTO driverDTO) {
         Driver driver = driverRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Driver not found with id: " + id));
+                .orElseThrow(() -> new EntityNotFoundException("Driver", id));
 
-        // Validate location access for LOCAL_ADMIN
         if (!locationFilterService.isSuperAdmin() && driver.getDriverLocation() != null) {
-            Long driverLocationId = driver.getDriverLocation().getLocationUnit().getIdLocationUnit();
-            locationFilterService.validateLocationAccess(driverLocationId);
+            Long locationId = driver.getDriverLocation().getLocationUnit().getIdLocationUnit();
+            locationFilterService.validateLocationAccess(locationId);
         }
 
-        // Validation: Check if new SAP number conflicts
         if (!driverDTO.getSapNumber().equals(driver.getSapNumber()) &&
                 driverRepository.existsBySapNumber(driverDTO.getSapNumber())) {
-            throw new IllegalArgumentException("Driver with SAP number " + driverDTO.getSapNumber() + " already exists");
+            throw new DuplicateEntityException("Driver", "SAP number", driverDTO.getSapNumber());
         }
 
-        // Update entity from DTO
         driverMapper.updateEntity(driver, driverDTO);
+        driverRepository.save(driver);
 
-        // Save and return DTO
-        Driver updated = driverRepository.save(driver);
-        return driverMapper.toResponseDTO(updated);
+        // Document changes may have shifted status
+        statusCalculationService.recalculateAndSaveDriverStatus(id);
+
+        return driverMapper.toResponseDTO(driverRepository.findById(id).orElseThrow());
     }
 
     /**
-     * Update driver status - validates location access
+     * Records a license revocation for a driver.
+     * Sets the fast flag on the driver row AND inserts an audit record
+     * in license_revocation — both in the same transaction.
+     * Immediately recalculates driver status to SUSPENDED.
      */
     @Transactional
-    public DriverResponseDTO updateDriverStatus(Long id, String status, Integer statusCode) {
-        Driver driver = driverRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Driver not found with id: " + id));
+    public DriverResponseDTO revokeDriverLicense(Long driverId, String reason, Long revokedByUserId) {
+        Driver driver = driverRepository.findById(driverId)
+                .orElseThrow(() -> new EntityNotFoundException("Driver", driverId));
 
-        // Validate location access
         if (!locationFilterService.isSuperAdmin() && driver.getDriverLocation() != null) {
-            Long driverLocationId = driver.getDriverLocation().getLocationUnit().getIdLocationUnit();
-            locationFilterService.validateLocationAccess(driverLocationId);
+            Long locationId = driver.getDriverLocation().getLocationUnit().getIdLocationUnit();
+            locationFilterService.validateLocationAccess(locationId);
         }
 
-        driver.setStatus(status);
-        if (statusCode != null) {
-            driver.setStatusCode(statusCode);
+        if (Integer.valueOf(1).equals(driver.getLicenseRevoked())) {
+            throw new BusinessRuleViolationException("LICENSE_ALREADY_REVOKED",
+                    "Driver '" + driver.getFullName() + "' already has a revoked license");
         }
 
-        Driver updated = driverRepository.save(driver);
-        return driverMapper.toResponseDTO(updated);
+        // Set fast flag
+        driver.setLicenseRevoked(1);
+        driverRepository.save(driver);
+
+        // Insert audit record
+        LicenseRevocation revocation = new LicenseRevocation();
+        revocation.setDriver(driver);
+        revocation.setRevocationDate(LocalDate.now());
+        revocation.setRevocationReason(reason);
+        revocation.setRevokedByUserId(revokedByUserId);
+        licenseRevocationRepository.save(revocation);
+
+        // Recalculate — will land on SUSPENDED
+        statusCalculationService.recalculateAndSaveDriverStatus(driverId);
+
+        log.info("License revoked for driver {} by user {}", driverId, revokedByUserId);
+        return driverMapper.toResponseDTO(driverRepository.findById(driverId).orElseThrow());
     }
 
     /**
-     * Delete driver - validates location access
+     * Restores a previously revoked license.
+     * Clears the fast flag AND sets restoration_date on the audit record
+     * — both in the same transaction.
+     * Immediately recalculates driver status.
      */
+    @Transactional
+    public DriverResponseDTO restoreDriverLicense(Long driverId, Long restoredByUserId) {
+        Driver driver = driverRepository.findById(driverId)
+                .orElseThrow(() -> new EntityNotFoundException("Driver", driverId));
+
+        if (!locationFilterService.isSuperAdmin() && driver.getDriverLocation() != null) {
+            Long locationId = driver.getDriverLocation().getLocationUnit().getIdLocationUnit();
+            locationFilterService.validateLocationAccess(locationId);
+        }
+
+        if (!Integer.valueOf(1).equals(driver.getLicenseRevoked())) {
+            throw new BusinessRuleViolationException("LICENSE_NOT_REVOKED",
+                    "Driver '" + driver.getFullName() + "' does not have a revoked license");
+        }
+
+        LicenseRevocation activeRevocation = licenseRevocationRepository
+                .findActiveRevocation(driverId)
+                .orElseThrow(() -> new BusinessRuleViolationException("NO_ACTIVE_REVOCATION",
+                        "No active revocation record found for driver: " + driverId));
+
+        // Clear fast flag
+        driver.setLicenseRevoked(0);
+        driverRepository.save(driver);
+
+        // Close audit record
+        activeRevocation.setRestorationDate(LocalDate.now());
+        activeRevocation.setRestoredByUserId(restoredByUserId);
+        licenseRevocationRepository.save(activeRevocation);
+
+        // Recalculate — will land on AVAILABLE or ON_DUTY depending on active orders
+        statusCalculationService.recalculateAndSaveDriverStatus(driverId);
+
+        log.info("License restored for driver {} by user {}", driverId, restoredByUserId);
+        return driverMapper.toResponseDTO(driverRepository.findById(driverId).orElseThrow());
+    }
+
     @Transactional
     public void deleteDriver(Long id) {
         Driver driver = driverRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Driver not found with id: " + id));
+                .orElseThrow(() -> new EntityNotFoundException("Driver", id));
 
-        // Validate location access
         if (!locationFilterService.isSuperAdmin() && driver.getDriverLocation() != null) {
-            Long driverLocationId = driver.getDriverLocation().getLocationUnit().getIdLocationUnit();
-            locationFilterService.validateLocationAccess(driverLocationId);
+            Long locationId = driver.getDriverLocation().getLocationUnit().getIdLocationUnit();
+            locationFilterService.validateLocationAccess(locationId);
         }
 
         driverRepository.deleteById(id);
     }
 
-    /**
-     * Check if driver exists
-     */
     public boolean driverExists(Long id) {
         return driverRepository.existsById(id);
     }
 
-    /**
-     * Check if driver is available (active and not on travel order)
-     */
     public boolean isDriverAvailable(Long driverId) {
-        // Get available drivers based on user's access level
-        List<Driver> availableDrivers;
-
-        if (locationFilterService.isSuperAdmin()) {
-            availableDrivers = driverRepository.findAvailableDrivers();
-        } else {
-            List<Long> locationIds = locationFilterService.getCurrentUserLocationIds();
-            availableDrivers = driverRepository.findAvailableDriversByLocationIds(locationIds);
-        }
-
-        return availableDrivers.stream()
-                .anyMatch(driver -> driver.getIdDriver().equals(driverId));
+        return driverRepository.findById(driverId)
+                .map(d -> d.getStatusCode() != null &&
+                        d.getStatusCode() == com.example.vozni_park.enums.DriverStatus.AVAILABLE.getCode())
+                .orElse(false);
     }
 }

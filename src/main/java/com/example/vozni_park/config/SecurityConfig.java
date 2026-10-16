@@ -16,10 +16,8 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
-/**
- * Security configuration with JWT authentication.
- * Protects API endpoints and enables role-based access control.
- */
+import java.util.List;
+
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity(prePostEnabled = true)
@@ -33,85 +31,133 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                // Disable CSRF (not needed for stateless REST APIs with JWT)
                 .csrf(csrf -> csrf.disable())
 
-                // Configure CORS
                 .cors(cors -> cors.configurationSource(request -> {
                     var config = new org.springframework.web.cors.CorsConfiguration();
-                    config.setAllowedOrigins(java.util.List.of(
-                            "https://vozni-park-frontend.azurewebsites.net"
+                    config.setAllowedOrigins(List.of(
+                            // Production
+                            "https://vozni-park-frontend.azurewebsites.net",
+                            // Local development — Vite dev server and Docker Nginx
+                            "http://localhost",
+                            "http://localhost:5173",
+                            "http://localhost:80"
                     ));
-                    config.setAllowedMethods(java.util.List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-                    config.setAllowedHeaders(java.util.List.of("*"));
+                    config.setAllowedMethods(List.of(
+                            "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+                    config.setAllowedHeaders(List.of("*"));
                     config.setAllowCredentials(false);
                     return config;
                 }))
 
-                // Configure exception handling
                 .exceptionHandling(exception -> exception
-                        .authenticationEntryPoint(jwtAuthenticationEntryPoint) // 401 Unauthorized
-                        .accessDeniedHandler(jwtAccessDeniedHandler)          // 403 Forbidden
+                        .authenticationEntryPoint(jwtAuthenticationEntryPoint)
+                        .accessDeniedHandler(jwtAccessDeniedHandler)
                 )
 
-                // Configure authorization rules
                 .authorizeHttpRequests(auth -> auth
-                        // Public endpoints (no authentication required)
+
+                        // ── Public ────────────────────────────────────────────────
                         .requestMatchers("/error").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/benchmark/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .requestMatchers("/v3/api-docs/**", "/api-docs/**").permitAll()
 
-                        // User Management - Admin only
-                        .requestMatchers("/api/users/**").hasAnyRole("SUPER_ADMIN", "LOCAL_ADMIN")
+                        // ── User management ───────────────────────────────────────
+                        .requestMatchers("/api/users/**")
+                                .hasAnyRole("SUPER_ADMIN", "LOCAL_ADMIN")
 
-                        // Vehicle Management - Admin and Driver (read-only for drivers)
-                        .requestMatchers(HttpMethod.GET, "/api/vehicles/**").hasAnyRole("SUPER_ADMIN", "LOCAL_ADMIN", "DRIVER")
-                        .requestMatchers("/api/vehicles/**").hasAnyRole("SUPER_ADMIN", "LOCAL_ADMIN")
+                        // ── Vehicles ──────────────────────────────────────────────
+                        .requestMatchers(HttpMethod.GET, "/api/vehicles/**")
+                                .hasAnyRole("SUPER_ADMIN", "LOCAL_ADMIN")
+                        .requestMatchers("/api/vehicles/**")
+                                .hasAnyRole("SUPER_ADMIN", "LOCAL_ADMIN")
 
-                        // Driver Management - Admin only
-                        .requestMatchers("/api/drivers/**").hasAnyRole("SUPER_ADMIN", "LOCAL_ADMIN")
+                        // ── Vehicle faults ────────────────────────────────────────
+                        .requestMatchers(HttpMethod.GET, "/api/vehicle-faults/**")
+                                .hasAnyRole("SUPER_ADMIN", "LOCAL_ADMIN")
+                        .requestMatchers("/api/vehicle-faults/**")
+                                .hasAnyRole("SUPER_ADMIN", "LOCAL_ADMIN")
 
-                        // Travel Orders - All authenticated users can view, only admins can modify
-                        .requestMatchers(HttpMethod.GET, "/api/travel-orders/**").hasAnyRole("SUPER_ADMIN", "LOCAL_ADMIN", "DRIVER")
-                        .requestMatchers("/api/travel-orders/**").hasAnyRole("SUPER_ADMIN", "LOCAL_ADMIN")
+                        // ── Traffic accidents ─────────────────────────────────────
+                        .requestMatchers(HttpMethod.GET, "/api/traffic-accidents/**")
+                                .hasAnyRole("SUPER_ADMIN", "LOCAL_ADMIN")
+                        .requestMatchers("/api/traffic-accidents/**")
+                                .hasAnyRole("SUPER_ADMIN", "LOCAL_ADMIN")
 
-                        // Location Units - Admin only
-                        .requestMatchers("/api/locations/**").hasAnyRole("SUPER_ADMIN", "LOCAL_ADMIN")
+                        // ── Vehicle assigned drivers ──────────────────────────────
+                        .requestMatchers("/api/vehicle-assigned-drivers/**")
+                                .hasAnyRole("SUPER_ADMIN", "LOCAL_ADMIN")
 
-                        // Brands, Models, Fuel Types - All authenticated users can view, only admins can modify
-                        .requestMatchers(HttpMethod.GET, "/api/brands/**", "/api/vehicle-models/**", "/api/fuel-types/**")
-                        .hasAnyRole("SUPER_ADMIN", "LOCAL_ADMIN", "DRIVER")
-                        .requestMatchers("/api/brands/**", "/api/vehicle-models/**", "/api/fuel-types/**")
-                        .hasAnyRole("SUPER_ADMIN", "LOCAL_ADMIN")
+                        // ── Vehicle documents ─────────────────────────────────────
+                        .requestMatchers("/api/vehicle-documents/**")
+                                .hasAnyRole("SUPER_ADMIN", "LOCAL_ADMIN")
 
-                        // Roles - Super Admin only
-                        .requestMatchers("/api/roles/**").hasRole("SUPER_ADMIN")
+                        // ── Drivers ───────────────────────────────────────────────
+                        .requestMatchers("/api/drivers/**")
+                                .hasAnyRole("SUPER_ADMIN", "LOCAL_ADMIN")
 
-                        // Registrations, Licenses, First Aid Kits - Admin only
-                        .requestMatchers("/api/registrations/**", "/api/drivers-licenses/**", "/api/first-aid-kits/**")
-                        .hasAnyRole("SUPER_ADMIN", "LOCAL_ADMIN")
+                        // ── Travel orders ─────────────────────────────────────────
+                        .requestMatchers(HttpMethod.GET, "/api/travel-orders/**")
+                                .hasAnyRole("SUPER_ADMIN", "LOCAL_ADMIN")
+                        .requestMatchers("/api/travel-orders/**")
+                                .hasAnyRole("SUPER_ADMIN", "LOCAL_ADMIN")
 
-                        // All other requests require authentication
+                        // ── Locations ─────────────────────────────────────────────
+                        .requestMatchers("/api/locations/**")
+                                .hasAnyRole("SUPER_ADMIN", "LOCAL_ADMIN")
+
+                        // ── Reference data (brands, models, fuel types, types) ────
+                        .requestMatchers(HttpMethod.GET,
+                                "/api/brands/**", "/api/vehicle-models/**",
+                                "/api/fuel-types/**", "/api/vehicle-types/**",
+                                "/api/travel-order-types/**")
+                                .hasAnyRole("SUPER_ADMIN", "LOCAL_ADMIN")
+                        .requestMatchers(
+                                "/api/brands/**", "/api/vehicle-models/**",
+                                "/api/fuel-types/**", "/api/vehicle-types/**",
+                                "/api/travel-order-types/**")
+                                .hasRole("SUPER_ADMIN")
+
+                        // ── Roles ─────────────────────────────────────────────────
+                        .requestMatchers("/api/roles/**")
+                                .hasRole("SUPER_ADMIN")
+
+                        // ── Document entities (registrations, licenses, kits) ─────
+                        .requestMatchers(
+                                "/api/registrations/**",
+                                "/api/drivers-licenses/**",
+                                "/api/first-aid-kits/**",
+                                "/api/casco-insurances/**",
+                                "/api/tachograph-devices/**",
+                                "/api/fire-extinguishers/**",
+                                "/api/medical-certificates/**",
+                                "/api/tachograph-cards/**",
+                                "/api/driver-permits/**")
+                                .hasAnyRole("SUPER_ADMIN", "LOCAL_ADMIN")
+
+                        // ── Admin refresh endpoint ────────────────────────────────
+                        .requestMatchers("/api/admin/**")
+                                .hasRole("SUPER_ADMIN")
+
+                        // ── Everything else requires authentication ───────────────
                         .anyRequest().authenticated()
                 )
 
-                // Stateless session management (no server-side sessions)
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
 
-                // Add JWT filter before Spring Security's default authentication filter
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(jwtAuthenticationFilter,
+                        UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 
-    /**
-     * Authentication Manager bean for manual authentication
-     */
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration config)
+            throws Exception {
         return config.getAuthenticationManager();
     }
 }

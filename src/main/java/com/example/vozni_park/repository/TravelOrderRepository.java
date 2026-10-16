@@ -97,4 +97,52 @@ public interface TravelOrderRepository extends JpaRepository<TravelOrder, Long> 
                                                     @Param("locationIds") List<Long> locationIds);
 
     boolean existsByWorkOrderNumber(String workOrderNumber);
+
+    /**
+     * Returns true if the vehicle has any ACTIVE travel order (status_code = 1).
+     * Used by status calc: Priority 4 for vehicles (ON_DUTY).
+     */
+    @Query("SELECT COUNT(tov) > 0 FROM TravelOrderVehicle tov " +
+            "WHERE tov.vehicle.idVehicle = :vehicleId " +
+            "AND tov.travelOrder.statusCode = 1")
+    boolean hasActiveVehicleTravelOrder(@Param("vehicleId") Long vehicleId);
+
+    /**
+     * Returns true if the vehicle has any UNFINISHED travel order (status_code = 2).
+     * Used by status calc: Priority 3 for vehicles (UNAVAILABLE).
+     */
+    @Query("SELECT COUNT(tov) > 0 FROM TravelOrderVehicle tov " +
+            "WHERE tov.vehicle.idVehicle = :vehicleId " +
+            "AND tov.travelOrder.statusCode = 2")
+    boolean hasUnfinishedVehicleTravelOrder(@Param("vehicleId") Long vehicleId);
+
+    /**
+     * Returns true if the driver has any ACTIVE travel order (status_code = 1).
+     * Used by status calc: Priority 3 for drivers (ON_DUTY).
+     */
+    @Query("SELECT COUNT(dto) > 0 FROM DriverTravelOrder dto " +
+            "WHERE dto.driver.idDriver = :driverId " +
+            "AND dto.travelOrder.statusCode = 1")
+    boolean hasActiveDriverTravelOrder(@Param("driverId") Long driverId);
+
+    /**
+     * Bulk fetch: all ACTIVE travel orders whose date_to has passed.
+     * Used by the daily status refresh job to transition ACTIVE → UNFINISHED.
+     */
+    @Query("SELECT t FROM TravelOrder t " +
+            "WHERE t.statusCode = 1 " +
+            "AND t.dateTo < :today " +
+            "AND t.endingMileage IS NULL")
+    List<TravelOrder> findExpiredActiveTravelOrders(@Param("today") LocalDate today);
+    @Query(value = """
+    SELECT
+        COALESCE(SUM(fr.liters), 0),
+        COALESCE(SUM(fr.total_amount), 0)
+    FROM fuel_receipt fr
+    INNER JOIN travel_order_fuel_receipt tofr
+        ON tofr.fuel_receipt_id = fr.id_fuel_receipt
+    WHERE tofr.travel_order_id = :travelOrderId
+    """, nativeQuery = true)
+    Object[] findFuelTotalsForTravelOrder(@Param("travelOrderId") Long travelOrderId);
+
 }

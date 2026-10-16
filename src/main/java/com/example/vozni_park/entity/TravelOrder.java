@@ -44,8 +44,19 @@ public class TravelOrder {
     @Column(name = "ending_mileage")
     private Long endingMileage;
 
+    /**
+     * Human-readable status label. Values: ACTIVE, UNFINISHED, COMPLETED, CANCELLED.
+     * Managed exclusively by StatusCalculationService — never set directly in other services.
+     */
     @Column(name = "status", length = 20)
-    private String status = "IN_PROGRESS";
+    private String status = "ACTIVE";
+
+    /**
+     * Numeric status code for queries. Values: 0=CANCELLED, 1=ACTIVE, 2=UNFINISHED, 3=COMPLETED.
+     * Managed exclusively by StatusCalculationService — never set directly in other services.
+     */
+    @Column(name = "status_code")
+    private Integer statusCode = 1;
 
     @CreationTimestamp
     @Column(name = "creation_time", updatable = false)
@@ -54,7 +65,11 @@ public class TravelOrder {
     @Column(name = "created_by_user_id", insertable = false, updatable = false)
     private Long createdByUserId;
 
-    // Relationships
+    @Column(name = "travel_order_type_id", insertable = false, updatable = false)
+    private Long travelOrderTypeId;
+
+    // ── Relationships ─────────────────────────────────────────────────
+
     @ManyToOne
     @JoinColumn(name = "created_by_user_id")
     private AppUser createdByUser;
@@ -62,6 +77,10 @@ public class TravelOrder {
     @ManyToOne
     @JoinColumn(name = "location_id")
     private LocationUnit location;
+
+    @ManyToOne
+    @JoinColumn(name = "travel_order_type_id")
+    private TravelOrderType travelOrderType;
 
     @OneToMany(mappedBy = "travelOrder")
     private List<DriverTravelOrder> driverTravelOrders;

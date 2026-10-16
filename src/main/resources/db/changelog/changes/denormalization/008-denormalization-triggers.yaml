@@ -1,0 +1,114 @@
+databaseChangeLog:
+
+  # ── Trigger 1: after_vehicle_model_update ─────────────────────────────────
+  # Fires when vehicle_model.name changes.
+  # Recalculates vehicle.vehicle_display_name for all vehicles using that model.
+  # Uses the same CONCAT logic as VehicleService.buildDisplayName().
+  - changeSet:
+      id: 806-drop-trigger-vehicle-model-update
+      author: system
+      dbms: mysql
+      changes:
+        - sql:
+            sql: DROP TRIGGER IF EXISTS after_vehicle_model_update
+
+  - changeSet:
+      id: 807-create-trigger-vehicle-model-update
+      author: system
+      dbms: mysql
+      runOnChange: true
+      changes:
+        - sql:
+            splitStatements: false
+            sql: |
+              CREATE TRIGGER after_vehicle_model_update
+              AFTER UPDATE ON vehicle_model
+              FOR EACH ROW
+              BEGIN
+                IF OLD.name != NEW.name THEN
+                  UPDATE vehicle v
+                  JOIN brand b ON b.id_brand = NEW.brand_id
+                  SET v.vehicle_display_name = CONCAT(b.name, ' ', NEW.name,
+                    IFNULL(
+                      CONCAT(' (', (
+                        SELECT registration_number
+                        FROM registration
+                        WHERE id_registration = v.registration_id
+                      ), ')'),
+                    ''))
+                  WHERE v.vehicle_model_id = NEW.id_vehicle_model;
+                END IF;
+              END
+
+  # ── Trigger 2: after_travel_order_complete ────────────────────────────────
+  # Fires when travel_order.status changes to 'COMPLETED'.
+  # Increments vehicle.total_distance_traveled for all vehicles in that order.
+  # Mirrors the Java logic in TravelOrderService.completeTravelOrder().
+  - changeSet:
+      id: 808-drop-trigger-travel-order-complete
+      author: system
+      dbms: mysql
+      changes:
+        - sql:
+            sql: DROP TRIGGER IF EXISTS after_travel_order_complete
+
+  - changeSet:
+      id: 809-create-trigger-travel-order-complete
+      author: system
+      dbms: mysql
+      runOnChange: true
+      changes:
+        - sql:
+            splitStatements: false
+            sql: |
+              CREATE TRIGGER after_travel_order_complete
+              AFTER UPDATE ON travel_order
+              FOR EACH ROW
+              BEGIN
+                IF NEW.status = 'COMPLETED' AND OLD.status != 'COMPLETED' THEN
+                  UPDATE vehicle v
+                  JOIN travel_order_vehicle tov ON tov.vehicle_id = v.id_vehicle
+                  SET v.total_distance_traveled =
+                    v.total_distance_traveled + (NEW.ending_mileage - NEW.starting_mileage)
+                  WHERE tov.travel_order_id = NEW.id_travel_order;
+                END IF;
+              END
+
+  # ── Trigger 3: after_brand_update ─────────────────────────────────────────
+  # Fires when brand.name changes.
+  # Recalculates vehicle.vehicle_display_name for all vehicles of that brand.
+  - changeSet:
+      id: 810-drop-trigger-brand-update
+      author: system
+      dbms: mysql
+      changes:
+        - sql:
+            sql: DROP TRIGGER IF EXISTS after_brand_update
+
+  - changeSet:
+      id: 811-create-trigger-brand-update
+      author: system
+      dbms: mysql
+      runOnChange: true
+      changes:
+        - sql:
+            splitStatements: false
+            sql: |
+              CREATE TRIGGER after_brand_update
+              AFTER UPDATE ON brand
+              FOR EACH ROW
+              BEGIN
+                IF OLD.name != NEW.name THEN
+                  UPDATE vehicle v
+                  JOIN vehicle_model vm ON vm.id_vehicle_model = v.vehicle_model_id
+                  SET v.vehicle_display_name = CONCAT(NEW.name, ' ', vm.name,
+                    IFNULL(
+                      CONCAT(' (', (
+                        SELECT registration_number
+                        FROM registration
+                        WHERE id_registration = v.registration_id
+                      ), ')'),
+                    ''))
+                  WHERE vm.brand_id = NEW.id_brand;
+                END IF;
+              END

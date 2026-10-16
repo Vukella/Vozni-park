@@ -1,0 +1,169 @@
+databaseChangeLog:
+
+  # =====================================================================
+  # 801: vehicle_display_name — precomputed display string
+  # Experiment A: value modification
+  # =====================================================================
+
+  - changeSet:
+      id: 801-add-vehicle-display-name
+      author: nemanja
+      preConditions:
+        onFail: MARK_RAN
+        not:
+          columnExists:
+            tableName: vehicle
+            columnName: vehicle_display_name
+      changes:
+        - addColumn:
+            tableName: vehicle
+            columns:
+              - column:
+                  name: vehicle_display_name
+                  type: VARCHAR(150)
+                  remarks: "Denormalized: brand + model + registration. Format: 'Brand Model (REG-NUMBER)'. Maintained by VehicleService on create/update."
+
+  # =====================================================================
+  # 802: total_distance_traveled — derived aggregate
+  # Experiment B: derived values
+  # =====================================================================
+
+  - changeSet:
+      id: 802-add-total-distance-traveled
+      author: nemanja
+      preConditions:
+        onFail: MARK_RAN
+        not:
+          columnExists:
+            tableName: vehicle
+            columnName: total_distance_traveled
+      changes:
+        - addColumn:
+            tableName: vehicle
+            columns:
+              - column:
+                  name: total_distance_traveled
+                  type: BIGINT
+                  defaultValueNumeric: 0
+                  remarks: "Denormalized: SUM of (ending_mileage - starting_mileage) across all COMPLETED travel orders for this vehicle. Incremented by TravelOrderService.closeTravelOrder()."
+
+  # =====================================================================
+  # 803: travel_order_report_snapshot — historical snapshot table
+  # Experiment C: snapshot/materialized view approach
+  # =====================================================================
+
+  - changeSet:
+      id: 803-create-travel-order-report-snapshot
+      author: nemanja
+      preConditions:
+        onFail: MARK_RAN
+        not:
+          tableExists:
+            tableName: travel_order_report_snapshot
+      changes:
+        - createTable:
+            tableName: travel_order_report_snapshot
+            columns:
+              - column:
+                  name: id_snapshot
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: travel_order_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    unique: true
+                  remarks: "FK to travel_order. One snapshot per travel order."
+              - column:
+                  name: travel_order_number
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: work_order_number
+                  type: VARCHAR(30)
+              - column:
+                  name: date_from
+                  type: DATE
+              - column:
+                  name: date_to
+                  type: DATE
+              - column:
+                  name: status
+                  type: VARCHAR(20)
+              - column:
+                  name: location_name
+                  type: VARCHAR(100)
+              - column:
+                  name: vehicle_display_name
+                  type: VARCHAR(150)
+                  remarks: "Snapshot of brand + model + registration at time of closing"
+              - column:
+                  name: registration_number
+                  type: VARCHAR(20)
+              - column:
+                  name: driver_names
+                  type: VARCHAR(500)
+                  remarks: "Comma-separated driver full names"
+              - column:
+                  name: starting_mileage
+                  type: INT
+              - column:
+                  name: ending_mileage
+                  type: INT
+              - column:
+                  name: distance_traveled
+                  type: INT
+                  remarks: "ending_mileage - starting_mileage"
+              - column:
+                  name: total_liters
+                  type: DECIMAL(10,2)
+                  defaultValueNumeric: 0
+                  remarks: "SUM of fuel_receipt.liters for this travel order"
+              - column:
+                  name: total_fuel_cost
+                  type: DECIMAL(15,2)
+                  defaultValueNumeric: 0
+                  remarks: "SUM of fuel_receipt.total_amount for this travel order"
+              - column:
+                  name: snapshot_created_at
+                  type: DATETIME
+                  constraints:
+                    nullable: false
+                  remarks: "Timestamp when this snapshot was created by TravelOrderSnapshotService"
+
+  - changeSet:
+      id: 804-fk-snapshot-travel-order
+      author: nemanja
+      preConditions:
+        onFail: MARK_RAN
+        not:
+          foreignKeyConstraintExists:
+            foreignKeyName: fk_snapshot_travel_order
+      changes:
+        - addForeignKeyConstraint:
+            baseTableName: travel_order_report_snapshot
+            baseColumnNames: travel_order_id
+            constraintName: fk_snapshot_travel_order
+            referencedTableName: travel_order
+            referencedColumnNames: id_travel_order
+
+  - changeSet:
+      id: 805-index-snapshot-travel-order-id
+      author: nemanja
+      preConditions:
+        onFail: MARK_RAN
+        not:
+          indexExists:
+            indexName: idx_snapshot_travel_order_id
+      changes:
+        - createIndex:
+            tableName: travel_order_report_snapshot
+            indexName: idx_snapshot_travel_order_id
+            columns:
+              - column:
+                  name: travel_order_id

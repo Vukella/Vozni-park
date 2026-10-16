@@ -34,7 +34,32 @@ public class Driver {
     @Column(name = "status_code")
     private Integer statusCode;
 
-    // Relationships
+    @Column(name = "license_revoked", nullable = false)
+    private Integer licenseRevoked = 0;
+
+    @Column(name = "EMPLOYEE_ID", insertable = false, updatable = false)
+    private Long zaposleniId;
+
+    @Column(name = "medical_certificate_id", insertable = false, updatable = false)
+    private Long medicalCertificateId;
+
+    @Column(name = "driver_permit_id", insertable = false, updatable = false)
+    private Long driverPermitId;
+
+    // ── Relationships ─────────────────────────────────────────────────
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "EMPLOYEE_ID")
+    private Employee employee;
+
+    @OneToOne
+    @JoinColumn(name = "medical_certificate_id")
+    private MedicalCertificate medicalCertificate;
+
+    @OneToOne
+    @JoinColumn(name = "driver_permit_id")
+    private DriverPermit driverPermit;
+
     @OneToOne(mappedBy = "driver")
     private DriverLocation driverLocation;
 
@@ -43,4 +68,7 @@ public class Driver {
 
     @OneToMany(mappedBy = "driver")
     private List<DriverTravelOrder> driverTravelOrders;
+
+    @OneToMany(mappedBy = "driver")
+    private List<LicenseRevocation> licenseRevocations;
 }

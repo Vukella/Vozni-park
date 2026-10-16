@@ -21,4 +21,6 @@ public interface TravelOrderVehicleRepository extends JpaRepository<TravelOrderV
     List<TravelOrderVehicle> findActiveByVehicleId(Long vehicleId);
     
     boolean existsByIdVehicleIdAndIdTravelOrderId(Long vehicleId, Long travelOrderId);
+
+    List<TravelOrderVehicle> findByTravelOrder_IdTravelOrder(Long travelOrderId);
 }

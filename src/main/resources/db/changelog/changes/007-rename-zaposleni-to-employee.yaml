@@ -1,0 +1,121 @@
+databaseChangeLog:
+
+  - changeSet:
+      id: "1001"
+      author: nemanja
+      comment: "T6 — drop all foreign keys referencing zaposleni or carrying its name"
+      changes:
+        - sql:
+            splitStatements: true
+            endDelimiter: ";"
+            sql: |
+              ALTER TABLE app_user DROP FOREIGN KEY fk_app_user_zaposleni;
+              ALTER TABLE driver DROP FOREIGN KEY fk_driver_zaposleni;
+              ALTER TABLE registration_tokens DROP FOREIGN KEY fk_registration_tokens_zaposleni;
+              ALTER TABLE zaposleni DROP FOREIGN KEY fk_zaposleni_manager;
+      rollback:
+        - sql:
+            splitStatements: true
+            endDelimiter: ";"
+            sql: |
+              ALTER TABLE app_user ADD CONSTRAINT fk_app_user_zaposleni
+                FOREIGN KEY (ZAPOSLENI_ID) REFERENCES zaposleni(ID_ZAPOSLENI) ON DELETE SET NULL;
+              ALTER TABLE driver ADD CONSTRAINT fk_driver_zaposleni
+                FOREIGN KEY (ZAPOSLENI_ID) REFERENCES zaposleni(ID_ZAPOSLENI) ON DELETE SET NULL;
+              ALTER TABLE registration_tokens ADD CONSTRAINT fk_registration_tokens_zaposleni
+                FOREIGN KEY (ZAPOSLENI_ID) REFERENCES zaposleni(ID_ZAPOSLENI) ON DELETE CASCADE;
+              ALTER TABLE zaposleni ADD CONSTRAINT fk_zaposleni_manager
+                FOREIGN KEY (manager_id) REFERENCES zaposleni(ID_ZAPOSLENI);
+
+  - changeSet:
+      id: "1002"
+      author: nemanja
+      comment: "T6 — rename table zaposleni to employee"
+      changes:
+        - sql:
+            sql: "RENAME TABLE zaposleni TO employee;"
+      rollback:
+        - sql:
+            sql: "RENAME TABLE employee TO zaposleni;"
+
+  - changeSet:
+      id: "1003"
+      author: nemanja
+      comment: "T6 — rename primary key column ID_ZAPOSLENI to ID_EMPLOYEE"
+      changes:
+        - sql:
+            sql: "ALTER TABLE employee RENAME COLUMN ID_ZAPOSLENI TO ID_EMPLOYEE;"
+      rollback:
+        - sql:
+            sql: "ALTER TABLE employee RENAME COLUMN ID_EMPLOYEE TO ID_ZAPOSLENI;"
+
+  - changeSet:
+      id: "1004"
+      author: nemanja
+      comment: "T6 — rename ZAPOSLENI_ID to EMPLOYEE_ID in app_user, driver, registration_tokens"
+      changes:
+        - sql:
+            splitStatements: true
+            endDelimiter: ";"
+            sql: |
+              ALTER TABLE app_user RENAME COLUMN ZAPOSLENI_ID TO EMPLOYEE_ID;
+              ALTER TABLE driver RENAME COLUMN ZAPOSLENI_ID TO EMPLOYEE_ID;
+              ALTER TABLE registration_tokens RENAME COLUMN ZAPOSLENI_ID TO EMPLOYEE_ID;
+      rollback:
+        - sql:
+            splitStatements: true
+            endDelimiter: ";"
+            sql: |
+              ALTER TABLE app_user RENAME COLUMN EMPLOYEE_ID TO ZAPOSLENI_ID;
+              ALTER TABLE driver RENAME COLUMN EMPLOYEE_ID TO ZAPOSLENI_ID;
+              ALTER TABLE registration_tokens RENAME COLUMN EMPLOYEE_ID TO ZAPOSLENI_ID;
+
+  - changeSet:
+      id: "1005"
+      author: nemanja
+      comment: "T6 — rename unique constraint and indexes"
+      changes:
+        - sql:
+            splitStatements: true
+            endDelimiter: ";"
+            sql: |
+              ALTER TABLE driver RENAME INDEX uq_driver_zaposleni_id TO uq_driver_employee_id;
+              ALTER TABLE employee RENAME INDEX idx_zaposleni_email TO idx_employee_email;
+              ALTER TABLE employee RENAME INDEX idx_zaposleni_sap_number TO idx_employee_sap_number;
+              ALTER TABLE employee RENAME INDEX idx_zaposleni_is_active TO idx_employee_is_active;
+      rollback:
+        - sql:
+            splitStatements: true
+            endDelimiter: ";"
+            sql: |
+              ALTER TABLE driver RENAME INDEX uq_driver_employee_id TO uq_driver_zaposleni_id;
+              ALTER TABLE employee RENAME INDEX idx_employee_email TO idx_zaposleni_email;
+              ALTER TABLE employee RENAME INDEX idx_employee_sap_number TO idx_zaposleni_sap_number;
+              ALTER TABLE employee RENAME INDEX idx_employee_is_active TO idx_zaposleni_is_active;
+
+  - changeSet:
+      id: "1006"
+      author: nemanja
+      comment: "T6 — recreate all foreign keys with new names"
+      changes:
+        - sql:
+            splitStatements: true
+            endDelimiter: ";"
+            sql: |
+              ALTER TABLE app_user ADD CONSTRAINT fk_app_user_employee
+                FOREIGN KEY (EMPLOYEE_ID) REFERENCES employee(ID_EMPLOYEE) ON DELETE SET NULL;
+              ALTER TABLE driver ADD CONSTRAINT fk_driver_employee
+                FOREIGN KEY (EMPLOYEE_ID) REFERENCES employee(ID_EMPLOYEE) ON DELETE SET NULL;
+              ALTER TABLE registration_tokens ADD CONSTRAINT fk_registration_tokens_employee
+                FOREIGN KEY (EMPLOYEE_ID) REFERENCES employee(ID_EMPLOYEE) ON DELETE CASCADE;
+              ALTER TABLE employee ADD CONSTRAINT fk_employee_manager
+                FOREIGN KEY (manager_id) REFERENCES employee(ID_EMPLOYEE);
+      rollback:
+        - sql:
+            splitStatements: true
+            endDelimiter: ";"
+            sql: |
+              ALTER TABLE app_user DROP FOREIGN KEY fk_app_user_employee;
+              ALTER TABLE driver DROP FOREIGN KEY fk_driver_employee;
+              ALTER TABLE registration_tokens DROP FOREIGN KEY fk_registration_tokens_employee;
+              ALTER TABLE employee DROP FOREIGN KEY fk_employee_manager;

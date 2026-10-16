@@ -32,7 +32,28 @@ public class DriversLicense {
     @Column(name = "status_code")
     private Integer statusCode;
 
-    // Relationships
+    /**
+     * 1 = driver has medical restrictions that affect license validity.
+     * date_to is already set to the minimum of the category-calculated expiry
+     * and the medical restriction date — no special status logic needed beyond
+     * the standard expiry check.
+     */
+    @Column(name = "medical_restrictions")
+    private Integer medicalRestrictions = 0;
+
+    @Column(name = "tachograph_card_id", insertable = false, updatable = false)
+    private Long tachographCardId;
+
+    // ── Relationships ─────────────────────────────────────────────────
+
+    /**
+     * A driving license may be associated with a tachograph card
+     * (required for professional drivers of certain vehicle categories).
+     */
+    @OneToOne
+    @JoinColumn(name = "tachograph_card_id")
+    private TachographCard tachographCard;
+
     @OneToMany(mappedBy = "driversLicense")
     private List<DriverLicenseAssignment> driverLicenseAssignments;
 }

@@ -4,6 +4,7 @@ import com.example.vozni_park.dto.request.TravelOrderRequestDTO;
 import com.example.vozni_park.dto.response.TravelOrderResponseDTO;
 import com.example.vozni_park.dto.summary.*;
 import com.example.vozni_park.entity.*;
+import com.example.vozni_park.enums.TravelOrderStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -20,13 +21,8 @@ public class TravelOrderMapper {
     @Autowired
     private DriverMapper driverMapper;
 
-    /**
-     * Convert TravelOrder entity to TravelOrderResponseDTO
-     */
     public TravelOrderResponseDTO toResponseDTO(TravelOrder travelOrder) {
-        if (travelOrder == null) {
-            return null;
-        }
+        if (travelOrder == null) return null;
 
         TravelOrderResponseDTO dto = new TravelOrderResponseDTO();
         dto.setIdTravelOrder(travelOrder.getIdTravelOrder());
@@ -37,52 +33,56 @@ public class TravelOrderMapper {
         dto.setStartingMileage(travelOrder.getStartingMileage());
         dto.setEndingMileage(travelOrder.getEndingMileage());
         dto.setStatus(travelOrder.getStatus());
+        dto.setStatusCode(travelOrder.getStatusCode());
         dto.setCreationTime(travelOrder.getCreationTime());
 
-        // Map Created By User (if present)
+        // Travel order type name (new)
+        if (travelOrder.getTravelOrderType() != null) {
+            dto.setTravelOrderTypeName(travelOrder.getTravelOrderType().getName());
+        }
+
+        // Created by user
         if (travelOrder.getCreatedByUser() != null) {
             AppUser user = travelOrder.getCreatedByUser();
             AppUserSummaryDTO userDTO = new AppUserSummaryDTO();
             userDTO.setIdUser(user.getIdUser());
             userDTO.setUsername(user.getUsername());
             userDTO.setFullName(user.getFullName());
-
             if (user.getRole() != null) {
-                Role role = user.getRole();
                 userDTO.setRole(new RoleSummaryDTO(
-                        role.getIdRole(),
-                        role.getName()
+                        user.getRole().getIdRole(),
+                        user.getRole().getName()
                 ));
             }
             dto.setCreatedByUser(userDTO);
         }
 
-        // Map Location (if present)
+        // Location
         if (travelOrder.getLocation() != null) {
-            LocationUnit location = travelOrder.getLocation();
+            LocationUnit loc = travelOrder.getLocation();
             dto.setLocation(new LocationUnitSummaryDTO(
-                    location.getIdLocationUnit(),
-                    location.getLocationName(),
-                    location.getLocationAddress()
+                    loc.getIdLocationUnit(),
+                    loc.getLocationName(),
+                    loc.getLocationAddress()
             ));
         }
 
-        // Map Drivers (if present)
-        if (travelOrder.getDriverTravelOrders() != null && !travelOrder.getDriverTravelOrders().isEmpty()) {
-            List<DriverSummaryDTO> drivers = travelOrder.getDriverTravelOrders().stream()
-                    .map(dto1 -> driverMapper.toSummaryDTO(dto1.getDriver()))
-                    .collect(Collectors.toList());
-            dto.setDrivers(drivers);
+        // Drivers
+        if (travelOrder.getDriverTravelOrders() != null &&
+                !travelOrder.getDriverTravelOrders().isEmpty()) {
+            dto.setDrivers(travelOrder.getDriverTravelOrders().stream()
+                    .map(d -> driverMapper.toSummaryDTO(d.getDriver()))
+                    .collect(Collectors.toList()));
         } else {
             dto.setDrivers(new ArrayList<>());
         }
 
-        // Map Vehicles (if present)
-        if (travelOrder.getTravelOrderVehicles() != null && !travelOrder.getTravelOrderVehicles().isEmpty()) {
-            List<VehicleSummaryDTO> vehicles = travelOrder.getTravelOrderVehicles().stream()
+        // Vehicles
+        if (travelOrder.getTravelOrderVehicles() != null &&
+                !travelOrder.getTravelOrderVehicles().isEmpty()) {
+            dto.setVehicles(travelOrder.getTravelOrderVehicles().stream()
                     .map(tov -> vehicleMapper.toSummaryDTO(tov.getVehicle()))
-                    .collect(Collectors.toList());
-            dto.setVehicles(vehicles);
+                    .collect(Collectors.toList()));
         } else {
             dto.setVehicles(new ArrayList<>());
         }
@@ -90,13 +90,8 @@ public class TravelOrderMapper {
         return dto;
     }
 
-    /**
-     * Convert TravelOrderRequestDTO to TravelOrder entity
-     */
     public TravelOrder toEntity(TravelOrderRequestDTO dto) {
-        if (dto == null) {
-            return null;
-        }
+        if (dto == null) return null;
 
         TravelOrder travelOrder = new TravelOrder();
         travelOrder.setDateFrom(dto.getDateFrom());
@@ -104,42 +99,33 @@ public class TravelOrderMapper {
         travelOrder.setWorkOrderNumber(dto.getWorkOrderNumber());
         travelOrder.setTravelOrderNumber(dto.getTravelOrderNumber());
         travelOrder.setStartingMileage(dto.getStartingMileage());
-        travelOrder.setEndingMileage(dto.getEndingMileage());
-        travelOrder.setStatus(dto.getStatus() != null ? dto.getStatus() : "IN_PROGRESS");
+
+        // Status is always ACTIVE on creation — never taken from the request.
+        // StatusCalculationService owns all status transitions after this point.
+        travelOrder.setStatus(TravelOrderStatus.ACTIVE.getLabel());
+        travelOrder.setStatusCode(TravelOrderStatus.ACTIVE.getCode());
 
         return travelOrder;
     }
 
     /**
-     * Update existing TravelOrder entity from TravelOrderRequestDTO
+     * Updates only the fields a client is allowed to change on an existing order.
+     * Status and statusCode are intentionally excluded — they are managed
+     * exclusively by StatusCalculationService.
      */
     public void updateEntity(TravelOrder travelOrder, TravelOrderRequestDTO dto) {
-        if (travelOrder == null || dto == null) {
-            return;
-        }
+        if (travelOrder == null || dto == null) return;
 
         travelOrder.setDateFrom(dto.getDateFrom());
         travelOrder.setDateTo(dto.getDateTo());
         travelOrder.setWorkOrderNumber(dto.getWorkOrderNumber());
-        travelOrder.setTravelOrderNumber(dto.getTravelOrderNumber());
         travelOrder.setStartingMileage(dto.getStartingMileage());
-        travelOrder.setEndingMileage(dto.getEndingMileage());
-        if (dto.getStatus() != null) {
-            travelOrder.setStatus(dto.getStatus());
-        }
-
+        // travelOrderNumber is auto-generated and immutable after creation
+        // status/statusCode are owned by StatusCalculationService — never set here
     }
 
-    /**
-     * Convert list of TravelOrder entities to list of TravelOrderResponseDTOs
-     */
     public List<TravelOrderResponseDTO> toResponseDTOList(List<TravelOrder> travelOrders) {
-        if (travelOrders == null) {
-            return new ArrayList<>();
-        }
-        return travelOrders.stream()
-                .map(this::toResponseDTO)
-                .collect(Collectors.toList());
+        if (travelOrders == null) return new ArrayList<>();
+        return travelOrders.stream().map(this::toResponseDTO).collect(Collectors.toList());
     }
 }
-

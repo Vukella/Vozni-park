@@ -14,13 +14,8 @@ import java.util.stream.Collectors;
 @Component
 public class DriverMapper {
 
-    /**
-     * Convert Driver entity to DriverResponseDTO
-     */
     public DriverResponseDTO toResponseDTO(Driver driver) {
-        if (driver == null) {
-            return null;
-        }
+        if (driver == null) return null;
 
         DriverResponseDTO dto = new DriverResponseDTO();
         dto.setIdDriver(driver.getIdDriver());
@@ -29,32 +24,78 @@ public class DriverMapper {
         dto.setPhone(driver.getPhone());
         dto.setStatus(driver.getStatus());
         dto.setStatusCode(driver.getStatusCode());
+        dto.setLicenseRevoked(driver.getLicenseRevoked());
 
-        // Map Location (if present)
+        // Location
         if (driver.getDriverLocation() != null &&
                 driver.getDriverLocation().getLocationUnit() != null) {
-            LocationUnit location = driver.getDriverLocation().getLocationUnit();
+            LocationUnit loc = driver.getDriverLocation().getLocationUnit();
             dto.setLocation(new LocationUnitSummaryDTO(
-                    location.getIdLocationUnit(),
-                    location.getLocationName(),
-                    location.getLocationAddress()
+                    loc.getIdLocationUnit(),
+                    loc.getLocationName(),
+                    loc.getLocationAddress()
             ));
         }
 
-        // Map Driver Licenses (if present)
-        if (driver.getDriverLicenseAssignments() != null && !driver.getDriverLicenseAssignments().isEmpty()) {
-            List<DriverResponseDTO.DriverLicenseSummaryDTO> licenses = driver.getDriverLicenseAssignments().stream()
-                    .map(assignment -> {
-                        DriversLicense license = assignment.getDriversLicense();
-                        return new DriverResponseDTO.DriverLicenseSummaryDTO(
-                                license.getIdDriversLicense(),
-                                license.getDateFrom(),
-                                license.getDateTo(),
-                                license.getStatus(),
-                                assignment.getLicenseCategory()
-                        );
-                    })
-                    .collect(Collectors.toList());
+        // Medical certificate (new)
+        if (driver.getMedicalCertificate() != null) {
+            MedicalCertificate mc = driver.getMedicalCertificate();
+            DriverResponseDTO.MedicalCertificateSummaryDTO mcDTO =
+                    new DriverResponseDTO.MedicalCertificateSummaryDTO();
+            mcDTO.setIdMedicalCertificate(mc.getIdMedicalCertificate());
+            mcDTO.setDateFrom(mc.getDateFrom());
+            mcDTO.setDateTo(mc.getDateTo());
+            mcDTO.setStatus(mc.getStatus());
+            mcDTO.setStatusCode(mc.getStatusCode());
+            dto.setMedicalCertificate(mcDTO);
+        }
+
+        // Driver permit (new)
+        if (driver.getDriverPermit() != null) {
+            DriverPermit dp = driver.getDriverPermit();
+            DriverResponseDTO.DriverPermitSummaryDTO dpDTO =
+                    new DriverResponseDTO.DriverPermitSummaryDTO();
+            dpDTO.setIdDriverPermit(dp.getIdDriverPermit());
+            dpDTO.setDateFrom(dp.getDateFrom());
+            dpDTO.setDateTo(dp.getDateTo());
+            dpDTO.setStatus(dp.getStatus());
+            dpDTO.setStatusCode(dp.getStatusCode());
+            dto.setDriverPermit(dpDTO);
+        }
+
+        // Driving licenses with tachograph card (updated)
+        if (driver.getDriverLicenseAssignments() != null &&
+                !driver.getDriverLicenseAssignments().isEmpty()) {
+            List<DriverResponseDTO.DriverLicenseSummaryDTO> licenses =
+                    driver.getDriverLicenseAssignments().stream()
+                            .map(assignment -> {
+                                DriversLicense license = assignment.getDriversLicense();
+                                DriverResponseDTO.DriverLicenseSummaryDTO licDTO =
+                                        new DriverResponseDTO.DriverLicenseSummaryDTO();
+                                licDTO.setIdDriversLicense(license.getIdDriversLicense());
+                                licDTO.setDateFrom(license.getDateFrom());
+                                licDTO.setDateTo(license.getDateTo());
+                                licDTO.setStatus(license.getStatus());
+                                licDTO.setStatusCode(license.getStatusCode());
+                                licDTO.setLicenseCategory(assignment.getLicenseCategory());
+                                licDTO.setMedicalRestrictions(license.getMedicalRestrictions());
+
+                                // Tachograph card linked to this license
+                                if (license.getTachographCard() != null) {
+                                    TachographCard tc = license.getTachographCard();
+                                    DriverResponseDTO.TachographCardSummaryDTO tcDTO =
+                                            new DriverResponseDTO.TachographCardSummaryDTO();
+                                    tcDTO.setIdTachographCard(tc.getIdTachographCard());
+                                    tcDTO.setDateFrom(tc.getDateFrom());
+                                    tcDTO.setDateTo(tc.getDateTo());
+                                    tcDTO.setStatus(tc.getStatus());
+                                    tcDTO.setStatusCode(tc.getStatusCode());
+                                    licDTO.setTachographCard(tcDTO);
+                                }
+
+                                return licDTO;
+                            })
+                            .collect(Collectors.toList());
             dto.setLicenses(licenses);
         } else {
             dto.setLicenses(new ArrayList<>());
@@ -63,59 +104,36 @@ public class DriverMapper {
         return dto;
     }
 
-    /**
-     * Convert DriverRequestDTO to Driver entity
-     */
     public Driver toEntity(DriverRequestDTO dto) {
-        if (dto == null) {
-            return null;
-        }
+        if (dto == null) return null;
 
         Driver driver = new Driver();
         driver.setSapNumber(dto.getSapNumber());
         driver.setFullName(dto.getFullName());
         driver.setPhone(dto.getPhone());
-        driver.setStatus(dto.getStatus());
-        driver.setStatusCode(dto.getStatusCode());
-
+        // Status and licenseRevoked are NOT set from request —
+        // status is managed by StatusCalculationService,
+        // licenseRevoked is managed by revokeDriverLicense/restoreDriverLicense.
+        driver.setLicenseRevoked(0);
         return driver;
     }
 
-    /**
-     * Update existing Driver entity from DriverRequestDTO
-     */
     public void updateEntity(Driver driver, DriverRequestDTO dto) {
-        if (driver == null || dto == null) {
-            return;
-        }
+        if (driver == null || dto == null) return;
 
         driver.setSapNumber(dto.getSapNumber());
         driver.setFullName(dto.getFullName());
         driver.setPhone(dto.getPhone());
-        driver.setStatus(dto.getStatus());
-        driver.setStatusCode(dto.getStatusCode());
+        // Status and licenseRevoked are intentionally NOT updated here.
     }
 
-    /**
-     * Convert list of Driver entities to list of DriverResponseDTOs
-     */
     public List<DriverResponseDTO> toResponseDTOList(List<Driver> drivers) {
-        if (drivers == null) {
-            return new ArrayList<>();
-        }
-        return drivers.stream()
-                .map(this::toResponseDTO)
-                .collect(Collectors.toList());
+        if (drivers == null) return new ArrayList<>();
+        return drivers.stream().map(this::toResponseDTO).collect(Collectors.toList());
     }
 
-    /**
-     * Convert Driver to DriverSummaryDTO (lightweight)
-     */
     public DriverSummaryDTO toSummaryDTO(Driver driver) {
-        if (driver == null) {
-            return null;
-        }
-
+        if (driver == null) return null;
         return new DriverSummaryDTO(
                 driver.getIdDriver(),
                 driver.getSapNumber(),
@@ -125,4 +143,3 @@ public class DriverMapper {
         );
     }
 }
-

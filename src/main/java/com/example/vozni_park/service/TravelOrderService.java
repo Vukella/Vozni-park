@@ -4,10 +4,12 @@ import com.example.vozni_park.dto.request.TravelOrderRequestDTO;
 import com.example.vozni_park.dto.response.TravelOrderResponseDTO;
 import com.example.vozni_park.entity.*;
 import com.example.vozni_park.entity.embeddable.TravelOrderCounterId;
+import com.example.vozni_park.event.TravelOrderClosedEvent;
 import com.example.vozni_park.mapper.TravelOrderMapper;
 import com.example.vozni_park.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,6 +34,7 @@ public class TravelOrderService {
     private final VehicleRepository vehicleRepository;
     private final DriverTravelOrderRepository driverTravelOrderRepository;
     private final TravelOrderVehicleRepository travelOrderVehicleRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * Get all travel orders - automatically filtered by user's location(s)
@@ -40,11 +43,9 @@ public class TravelOrderService {
         List<TravelOrder> travelOrders;
 
         if (locationFilterService.isSuperAdmin()) {
-            // SUPER_ADMIN sees everything
             log.debug("SUPER_ADMIN access - fetching all travel orders");
             travelOrders = travelOrderRepository.findAll();
         } else {
-            // LOCAL_ADMIN sees only their location(s)
             List<Long> locationIds = locationFilterService.getCurrentUserLocationIds();
             log.debug("LOCAL_ADMIN access - fetching travel orders for locations: {}", locationIds);
             travelOrders = travelOrderRepository.findByLocationIds(locationIds);
@@ -59,7 +60,6 @@ public class TravelOrderService {
     public Optional<TravelOrderResponseDTO> getTravelOrderById(Long id) {
         Optional<TravelOrder> travelOrder = travelOrderRepository.findById(id);
 
-        // If not SUPER_ADMIN, validate location access
         if (travelOrder.isPresent() && !locationFilterService.isSuperAdmin()) {
             TravelOrder to = travelOrder.get();
             Long orderLocationId = to.getLocation().getIdLocationUnit();
@@ -79,7 +79,6 @@ public class TravelOrderService {
     public Optional<TravelOrderResponseDTO> getTravelOrderByWorkOrderNumber(String workOrderNumber) {
         Optional<TravelOrder> travelOrder = travelOrderRepository.findByWorkOrderNumber(workOrderNumber);
 
-        // Validate location access
         if (travelOrder.isPresent() && !locationFilterService.isSuperAdmin()) {
             TravelOrder to = travelOrder.get();
             Long orderLocationId = to.getLocation().getIdLocationUnit();
@@ -111,7 +110,6 @@ public class TravelOrderService {
      * Get travel orders by location - validates location access
      */
     public List<TravelOrderResponseDTO> getTravelOrdersByLocation(Long locationId) {
-        // Validate location access
         if (!locationFilterService.isSuperAdmin()) {
             locationFilterService.validateLocationAccess(locationId);
         }
@@ -124,7 +122,6 @@ public class TravelOrderService {
      * Get active travel orders for a location - validates location access
      */
     public List<TravelOrderResponseDTO> getActiveTravelOrdersByLocation(Long locationId) {
-        // Validate location access
         if (!locationFilterService.isSuperAdmin()) {
             locationFilterService.validateLocationAccess(locationId);
         }
@@ -134,7 +131,7 @@ public class TravelOrderService {
     }
 
     /**
-     * Get travel orders by driver - location filtered (OPTIMIZED)
+     * Get travel orders by driver - location filtered
      */
     public List<TravelOrderResponseDTO> getTravelOrdersByDriver(Long driverId) {
         List<TravelOrder> travelOrders;
@@ -150,7 +147,7 @@ public class TravelOrderService {
     }
 
     /**
-     * Get travel orders by vehicle - location filtered (OPTIMIZED)
+     * Get travel orders by vehicle - location filtered
      */
     public List<TravelOrderResponseDTO> getTravelOrdersByVehicle(Long vehicleId) {
         List<TravelOrder> travelOrders;
@@ -221,7 +218,7 @@ public class TravelOrderService {
 
         travelOrder.setLocation(location);
 
-        // 6) FORCE createdBy from token
+        // 6) Force createdBy from token
         travelOrder.setCreatedByUser(creator);
 
         // 7) Auto-generate travel order number if not provided
@@ -252,10 +249,7 @@ public class TravelOrderService {
 
             var links = drivers.stream().map(d -> {
                 var link = new DriverTravelOrder();
-
-                // ✅ CRITICAL: EmbeddedId must not be null when using @MapsId
                 link.setId(new com.example.vozni_park.entity.embeddable.DriverTravelOrderId());
-
                 link.setTravelOrder(saved);
                 link.setDriver(d);
                 return link;
@@ -274,10 +268,7 @@ public class TravelOrderService {
 
             var links = vehicles.stream().map(v -> {
                 var link = new TravelOrderVehicle();
-
-                // ✅ CRITICAL: EmbeddedId must not be null when using @MapsId
                 link.setId(new com.example.vozni_park.entity.embeddable.TravelOrderVehicleId());
-
                 link.setTravelOrder(saved);
                 link.setVehicle(v);
                 return link;
@@ -286,10 +277,7 @@ public class TravelOrderService {
             travelOrderVehicleRepository.saveAll(links);
         }
 
-        // Re-fetch (optional, but good if mapper reads lazy collections)
-        TravelOrder full = travelOrderRepository.findById(saved.getIdTravelOrder())
-                .orElseThrow();
-
+        TravelOrder full = travelOrderRepository.findById(saved.getIdTravelOrder()).orElseThrow();
         return travelOrderMapper.toResponseDTO(full);
     }
 
@@ -299,7 +287,6 @@ public class TravelOrderService {
     private String generateTravelOrderNumber(Long locationId) {
         int currentYear = LocalDate.now().getYear();
 
-        // Get or create counter with pessimistic lock (thread-safe)
         TravelOrderCounter counter = travelOrderCounterRepository
                 .findByLocationAndYearForUpdate(locationId, currentYear)
                 .orElseGet(() -> {
@@ -310,12 +297,10 @@ public class TravelOrderService {
                     return newCounter;
                 });
 
-        // Increment counter
         int nextNumber = counter.getLastNumber() + 1;
         counter.setLastNumber(nextNumber);
         travelOrderCounterRepository.save(counter);
 
-        // Format: LOC-YYYY-NNNN
         return String.format("%d-%d-%04d", locationId, currentYear, nextNumber);
     }
 
@@ -327,39 +312,32 @@ public class TravelOrderService {
         TravelOrder travelOrder = travelOrderRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Travel order not found with id: " + id));
 
-        // Validate location access for LOCAL_ADMIN
         if (!locationFilterService.isSuperAdmin()) {
             Long orderLocationId = travelOrder.getLocation().getIdLocationUnit();
             locationFilterService.validateLocationAccess(orderLocationId);
 
-            // Also validate new location if it's being changed
             if (!travelOrderDTO.getLocationId().equals(orderLocationId)) {
                 locationFilterService.validateLocationAccess(travelOrderDTO.getLocationId());
             }
         }
 
-        // Validation: Check if location exists
         if (!locationUnitRepository.existsById(travelOrderDTO.getLocationId())) {
             throw new IllegalArgumentException("Location not found with id: " + travelOrderDTO.getLocationId());
         }
 
-        // Validation: Check if work order number conflicts
         if (travelOrderDTO.getWorkOrderNumber() != null &&
                 !travelOrderDTO.getWorkOrderNumber().equals(travelOrder.getWorkOrderNumber()) &&
                 travelOrderRepository.existsByWorkOrderNumber(travelOrderDTO.getWorkOrderNumber())) {
             throw new IllegalArgumentException("Work order number '" + travelOrderDTO.getWorkOrderNumber() + "' already exists");
         }
 
-        // Validation: Date range check
         if (travelOrderDTO.getDateFrom() != null && travelOrderDTO.getDateTo() != null &&
                 travelOrderDTO.getDateTo().isBefore(travelOrderDTO.getDateFrom())) {
             throw new IllegalArgumentException("End date cannot be before start date");
         }
 
-        // Update entity from DTO
         travelOrderMapper.updateEntity(travelOrder, travelOrderDTO);
 
-        // Save and return DTO
         TravelOrder updated = travelOrderRepository.save(travelOrder);
         return travelOrderMapper.toResponseDTO(updated);
     }
@@ -372,13 +350,11 @@ public class TravelOrderService {
         TravelOrder travelOrder = travelOrderRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Travel order not found with id: " + id));
 
-        // Validate location access
         if (!locationFilterService.isSuperAdmin()) {
             Long orderLocationId = travelOrder.getLocation().getIdLocationUnit();
             locationFilterService.validateLocationAccess(orderLocationId);
         }
 
-        // Validation: Status change rules
         if ("COMPLETED".equals(status)) {
             if (travelOrder.getEndingMileage() == null) {
                 throw new IllegalArgumentException("Cannot complete travel order without ending mileage");
@@ -396,20 +372,23 @@ public class TravelOrderService {
     }
 
     /**
-     * Complete travel order - validates location access
+     * Complete travel order - validates location access.
+     *
+     * Denormalization side effects (Experiments B and C):
+     *   1. Increments vehicle.total_distance_traveled by the trip distance.
+     *   2. Publishes TravelOrderClosedEvent → TravelOrderSnapshotService builds
+     *      the travel_order_report_snapshot row after commit.
      */
     @Transactional
     public TravelOrderResponseDTO completeTravelOrder(Long id, Long endingMileage) {
         TravelOrder travelOrder = travelOrderRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Travel order not found with id: " + id));
 
-        // Validate location access
         if (!locationFilterService.isSuperAdmin()) {
             Long orderLocationId = travelOrder.getLocation().getIdLocationUnit();
             locationFilterService.validateLocationAccess(orderLocationId);
         }
 
-        // Validation
         if (travelOrder.getStartingMileage() != null && endingMileage < travelOrder.getStartingMileage()) {
             throw new IllegalArgumentException("Ending mileage cannot be less than starting mileage");
         }
@@ -418,6 +397,28 @@ public class TravelOrderService {
         travelOrder.setStatus("COMPLETED");
 
         TravelOrder updated = travelOrderRepository.save(travelOrder);
+
+        // ── Experiment B: increment total_distance_traveled on linked vehicles ──
+        if (updated.getStartingMileage() != null) {
+            long distance = endingMileage - updated.getStartingMileage();
+            if (distance > 0) {
+                List<TravelOrderVehicle> vehicleLinks =
+                        travelOrderVehicleRepository.findByTravelOrder_IdTravelOrder(updated.getIdTravelOrder());
+                for (TravelOrderVehicle link : vehicleLinks) {
+                    Vehicle vehicle = link.getVehicle();
+                    long current = vehicle.getTotalDistanceTraveled() != null
+                            ? vehicle.getTotalDistanceTraveled() : 0L;
+                    vehicle.setTotalDistanceTraveled(current + distance);
+                    vehicleRepository.save(vehicle);
+                    log.debug("Vehicle {} total_distance_traveled incremented by {} km", vehicle.getIdVehicle(), distance);
+                }
+            }
+        }
+
+        // ── Experiment C: trigger snapshot creation after commit ──
+        eventPublisher.publishEvent(new TravelOrderClosedEvent(updated.getIdTravelOrder()));
+        log.debug("TravelOrderClosedEvent published for travel order {}", updated.getIdTravelOrder());
+
         return travelOrderMapper.toResponseDTO(updated);
     }
 
@@ -429,7 +430,6 @@ public class TravelOrderService {
         TravelOrder travelOrder = travelOrderRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Travel order not found with id: " + id));
 
-        // Validate location access
         if (!locationFilterService.isSuperAdmin()) {
             Long orderLocationId = travelOrder.getLocation().getIdLocationUnit();
             locationFilterService.validateLocationAccess(orderLocationId);

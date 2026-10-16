@@ -1,17 +1,17 @@
 package com.example.vozni_park.dto.response;
 
-import com.example.vozni_park.dto.summary.*;
-import lombok.AllArgsConstructor;
+import com.example.vozni_park.dto.summary.FuelTypeSummaryDTO;
+import com.example.vozni_park.dto.summary.LocationUnitSummaryDTO;
+import com.example.vozni_park.dto.summary.VehicleModelSummaryDTO;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class VehicleResponseDTO {
+
+    // ── Core identity ─────────────────────────────────────────────────
     private Long idVehicle;
     private Long sapNumber;
     private String chassisNumber;
@@ -20,38 +20,87 @@ public class VehicleResponseDTO {
     private Integer yearOfManufacture;
     private BigDecimal engineDisplacement;
     private Integer power;
-    private String tireMarking;
-    private Long fireExtinguisherSerialNumber;
+
+    // ── Status ────────────────────────────────────────────────────────
     private String vehicleStatus;
     private Integer statusCode;
 
-    // Nested objects (using summary DTOs to avoid lazy loading)
-    private RegistrationSummaryDTO registration;
-    private FuelTypeSummaryDTO fuelType;
-    private FirstAidKitSummaryDTO firstAidKit;
+    // ── Physical attributes (changeset 721) ───────────────────────────
+    private BigDecimal mass;
+    private String color;
+    private Integer loadCapacity;
+    private Integer totalMass;
+    private Integer numberOfSeats;
+    private LocalDate firstRegistrationDate;
+    private Integer operationalLeasing;
+    private Integer decommissioned;
+    private LocalDate decommissionDate;
+    private String note;
+
+    // ── Legacy fields (kept for backward compatibility) ───────────────
+    private String tireMarking;
+    private Long fireExtinguisherSerialNumber;
+
+    // ── Related entities ──────────────────────────────────────────────
     private VehicleModelSummaryDTO vehicleModel;
+    private FuelTypeSummaryDTO fuelType;
     private LocationUnitSummaryDTO location;
 
-    // Summary DTO for nested Registration
+    private RegistrationSummaryDTO registration;
+    private FirstAidKitSummaryDTO firstAidKit;
+    private CascoInsuranceSummaryDTO cascoInsurance;
+    private TachographDeviceSummaryDTO tachographDevice;
+    private FireExtinguisherSummaryDTO fireExtinguisher;
+
+    // ── Inner summary DTOs ────────────────────────────────────────────
+
     @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
     public static class RegistrationSummaryDTO {
         private Long idRegistration;
         private String registrationNumber;
         private LocalDate dateFrom;
         private LocalDate dateTo;
         private String status;
+        private Integer statusCode;
     }
 
-    // Summary DTO for nested FirstAidKit
     @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
     public static class FirstAidKitSummaryDTO {
         private Long idFirstAidKit;
         private LocalDate expiryDate;
         private String status;
+        private Integer statusCode;
+    }
+
+    @Data
+    public static class CascoInsuranceSummaryDTO {
+        private Long idCascoInsurance;
+        private String contractNumber;
+        private String policyNumber;
+        private LocalDate dateFrom;
+        private LocalDate dateTo;
+        private String status;
+        private Integer statusCode;
+    }
+
+    @Data
+    public static class TachographDeviceSummaryDTO {
+        private Long idTachographDevice;
+        private String deviceType;
+        private String serialNumber;
+        private LocalDate dateFrom;
+        private LocalDate dateTo;
+        private String status;
+        private Integer statusCode;
+    }
+
+    @Data
+    public static class FireExtinguisherSummaryDTO {
+        private Long idFireExtinguisher;
+        private String serialNumber;
+        private LocalDate dateFrom;
+        private LocalDate dateTo;
+        private String status;
+        private Integer statusCode;
     }
 }
-

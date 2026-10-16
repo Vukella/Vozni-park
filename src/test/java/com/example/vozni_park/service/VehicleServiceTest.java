@@ -104,7 +104,7 @@ class VehicleServiceTest {
         when(vehicleRepository.existsBySapNumber(123456L)).thenReturn(true);
 
         assertThatThrownBy(() -> vehicleService.createVehicle(requestDTO))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(com.example.vozni_park.exception.DuplicateEntityException.class)
                 .hasMessageContaining("SAP number");
 
         verify(vehicleRepository, never()).save(any());
@@ -125,7 +125,7 @@ class VehicleServiceTest {
         when(vehicleRepository.findById(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> vehicleService.deleteVehicle(99L))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(com.example.vozni_park.exception.EntityNotFoundException.class)
                 .hasMessageContaining("Vehicle not found");
 
         verify(vehicleRepository, never()).deleteById(any());

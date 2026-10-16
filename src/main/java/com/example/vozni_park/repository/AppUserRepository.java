@@ -18,7 +18,7 @@ public interface AppUserRepository extends JpaRepository<AppUser, Long> {
 
     @Query(value = """
         SELECT z.EMAIL FROM app_user u
-        JOIN zaposleni z ON u.ZAPOSLENI_ID = z.ID_ZAPOSLENI
+        JOIN employee e ON u.EMPLOYEE_ID = z.ID_EMPLOYEE
         WHERE u.USERNAME = :username
         """, nativeQuery = true)
     Optional<String> findEmailByUsername(@Param("username") String username);
